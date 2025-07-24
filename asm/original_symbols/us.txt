@@ -37,6 +37,9 @@ main.dol:
     TextManager__setNumericArgs: 0x800b8a60
     TextManager__setStringArg: 0x800b7fa0
     AcOTBox__initDowsingTarget: 0x8026d780
+    cM_rnd: 0x802e0d10
+    RELOCATE_RAND: 0x802e0d18 # addr to return to for relocated rng func
+    REST_OF_RNG_FUNC: 0x802E0E20
     cM_rndI: 0x802e0d20
     LYT_MSG_MANAGER: 0x80575488
     GLOBAL_MESSAGE_RELATED_CONTEXT: 0x80575740

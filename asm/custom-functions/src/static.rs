@@ -11,6 +11,14 @@ pub static mut UPDATE_HOOK: Option<fn() -> u32> = Option::None;
 #[link_section = "data"]
 pub static mut INSTANT_TEXT_ACTIVE: bool = false;
 
+#[no_mangle]
+#[link_section = "data"]
+pub static mut USE_RNG: bool = true;
+
+#[no_mangle]
+#[link_section = "data"]
+pub static mut HARDCODED_RNG_FLOAT: f32 = 0f32;
+
 // A Common Place where Custom code can be injected to run once per frame
 // Returns whether or not to stop (1 == continue)
 #[no_mangle]

@@ -1,11 +1,15 @@
 main.dol:
   handle_instant_text: 0x8067B540
   finish_instant_text: 0x8067B55C
-  custom_main_additions: 0x8067B560
-  set_hook: 0x8067B59C
-  clear_hook: 0x8067B5A8
-  set_instant_text: 0x8067B5B8
-  load_custom_rel: 0x8067B5C8
-  load_rel: 0x8067B5F0
-  UPDATE_HOOK: 0x8067B6D4
-  INSTANT_TEXT_ACTIVE: 0x8067B6D8
+  hijack_rng: 0x8067B560
+  use_game_rng: 0x8067B57C
+  custom_main_additions: 0x8067B580
+  set_hook: 0x8067B5BC
+  clear_hook: 0x8067B5C8
+  set_instant_text: 0x8067B5D8
+  load_custom_rel: 0x8067B5E8
+  load_rel: 0x8067B610
+  UPDATE_HOOK: 0x8067B6F4
+  INSTANT_TEXT_ACTIVE: 0x8067B6F8
+  USE_RNG: 0x8067B6F9
+  HARDCODED_RNG_FLOAT: 0x8067B6FC

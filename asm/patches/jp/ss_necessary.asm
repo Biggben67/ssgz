@@ -4,6 +4,8 @@
 .global custom_main_additions
 .global handle_instant_text
 .global finish_instant_text
+.global hijack_rng
+.global use_game_rng
 handle_instant_text:
 lis r9, INSTANT_TEXT_ACTIVE@ha
 li r4, 0
@@ -15,6 +17,18 @@ b finish_instant_text
 finish_instant_text:
 b returnForInstantText
 ; .global is_instant_text
+
+hijack_rng:
+lis r3, USE_RNG@ha
+lbz r3, USE_RNG@l(r3)
+cmpwi r3, 0
+bne use_game_rng
+lis r3, HARDCODED_RNG_FLOAT@ha
+lfs f1, HARDCODED_RNG_FLOAT@l(r3)
+blr
+
+use_game_rng:
+b RELOCATE_RAND
 
 
 ; 0x80062f40 in JP 1.0
@@ -37,5 +51,11 @@ b load_custom_rel
 .org 0x801160b4 ; instant text patch
 b handle_instant_text
 ;bl is_instant_text
+
+.org 0x802e1110
+b hijack_rng
+.org 0x802e1118
+subi r3, r13, 0x38A0
+b REST_OF_RNG_FUNC
 
 .close
