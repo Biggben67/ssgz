@@ -7,8 +7,6 @@
 .global hijack_rng
 .global use_game_rng
 
-
-
 handle_instant_text:
 lis r9, INSTANT_TEXT_ACTIVE@ha
 li r4, 0
@@ -19,14 +17,16 @@ li r4, 1
 b finish_instant_text
 finish_instant_text:
 b returnForInstantText
+
 hijack_rng:
 lis r3, USE_RNG@ha
-lwz r3, USE_RNG@l(r3)
+lbz r3, USE_RNG@l(r3)
 cmpwi r3, 0
 bne use_game_rng
 lis r3, HARDCODED_RNG_FLOAT@ha
 lfs f1, HARDCODED_RNG_FLOAT@l(r3)
 blr
+
 use_game_rng:
 b RELOCATE_RAND
 

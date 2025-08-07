@@ -6,6 +6,7 @@
 .global finish_instant_text
 .global hijack_rng
 .global use_game_rng
+
 handle_instant_text:
 lis r9, INSTANT_TEXT_ACTIVE@ha
 li r4, 0
@@ -16,7 +17,6 @@ li r4, 1
 b finish_instant_text
 finish_instant_text:
 b returnForInstantText
-; .global is_instant_text
 
 hijack_rng:
 lis r3, USE_RNG@ha
@@ -29,7 +29,6 @@ blr
 
 use_game_rng:
 b RELOCATE_RAND
-
 
 ; 0x80062f40 in JP 1.0
 ; 0x80062e60 in US 1.0
