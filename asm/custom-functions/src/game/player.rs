@@ -3,6 +3,7 @@ use core::ffi::c_void;
 use crate::system::math::{Vec3f, Vec3s};
 
 #[repr(C)]
+#[allow(clippy::identity_op)]
 pub struct ActorLink {
     pub base_base:      [u8; 0x60 - 0x00],
     pub vtable:         u32,

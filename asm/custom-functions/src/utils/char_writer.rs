@@ -113,13 +113,13 @@ impl TextWriterBase {
         if self.set_font(0) {
             return unsafe { CharWriter__GetFontWidth(&self.char_writer, b'-' as u16) };
         }
-        return 0.0f32;
+        0.0f32
     }
     pub fn get_font_height(&mut self) -> f32 {
         if self.set_font(0) {
             return unsafe { CharWriter__GetFontHeight(&self.char_writer, b'!' as u16) };
         }
-        return 0.0f32;
+        0.0f32
     }
 
     pub fn set_scale(&mut self, scale: f32) {
@@ -262,6 +262,7 @@ impl Write for CharWriter {
     }
 }
 
+#[allow(clippy::new_without_default)]
 impl CharWriter {
     pub fn new() -> Self {
         Self {
@@ -292,7 +293,7 @@ impl CharWriter {
         if !writer.is_null() {
             // ensure line ending
             if *(self.buffer.last().unwrap()) != 0x0000 {
-                let _ = self.buffer.push(0);
+                self.buffer.push(0);
                 if let Some(last) = self.buffer.last_mut() {
                     *last = 0;
                 }
@@ -315,7 +316,7 @@ impl CharWriter {
 
         // ensure line ending
         if *(self.buffer.last().unwrap()) != 0x0000 {
-            let _ = self.buffer.push(0);
+            self.buffer.push(0);
             if let Some(last) = self.buffer.last_mut() {
                 *last = 0;
             }

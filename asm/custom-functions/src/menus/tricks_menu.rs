@@ -18,7 +18,7 @@ const TRICKS: [Trick; 14] = [
     Trick {
         name:   "Wing Ceremony Cutscene Skip",
         description: "Practice WCCS Save Prompt sidehop (Kills Link for faster reloads).",
-        associated_enum: ActiveTrick::WCCS,
+        associated_enum: ActiveTrick::Wccs,
         on_select: Some(reload_wccs_prompt),
     },
     Trick {
@@ -132,7 +132,7 @@ enum MenuState {
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum ActiveTrick {
     None,
-    WCCS,
+    Wccs,
     Guay,
     KeeseYeet,
     EB,
@@ -229,14 +229,7 @@ extern "C" {
 }
 
 fn get_boss_health() -> Option<u32> {
-    match get_first_enemy() {
-        Some(e) => {
-            unsafe {
-                Some((e.add(0x10) as *mut u32).read())
-            }
-        },
-        None => None,
-    }
+    get_first_enemy().map(|e| unsafe { (e.add(0x10) as *mut u32).read() })
 }
 
 fn is_boss_dead() -> bool {
@@ -823,7 +816,7 @@ pub fn update_tricks() {
 
     match tricks_menu.active_trick {
         ActiveTrick::None => {},
-        ActiveTrick::WCCS => {
+        ActiveTrick::Wccs => {
             check_wccs();
             if ButtonBuffer::check_combo_down_up(DPAD_LEFT, C) {
                 reload_wccs_prompt();

@@ -1,6 +1,7 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(unused)]
+#![allow(clippy::upper_case_acronyms)]
 
 use crate::system::math::Vec3f;
 use core::ffi::{c_char, c_int, c_short, c_uchar, c_uint, c_ushort};

@@ -59,7 +59,7 @@ pub fn dyn_hook() -> u32 {
         }
     }
 
-    return 1;
+    1
 }
 
 extern "C" { 

@@ -23,6 +23,7 @@ pub struct Dol {
     entry_point_address: u32,
 }
 
+#[allow(clippy::identity_op)]
 impl Dol {
     pub fn new(data: Vec<u8>) -> Self {
         let mut sections: Vec<DolSection> = Vec::new();

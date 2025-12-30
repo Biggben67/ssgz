@@ -12,7 +12,7 @@ use crate::paths::{
 pub fn do_gz_patches(version: GameVersion) -> anyhow::Result<()> {
     // Load necessary patch data for this version
     let patch_data = get_patch_data(version).unwrap();
-    let og_dol: Vec<u8> = fs::read(&original_dol_path(version))?;
+    let og_dol: Vec<u8> = fs::read(original_dol_path(version))?;
     let mut dol = Dol::new(og_dol);
 
     println!("Patching main.dol...");
@@ -24,9 +24,9 @@ pub fn do_gz_patches(version: GameVersion) -> anyhow::Result<()> {
         .read(true)
         .write(true)
         .create(true)
-        .open(&modified_dol_path(patch_data.version))?;
+        .open(modified_dol_path(patch_data.version))?;
 
-    dest_dol.write(dol.data.as_slice())?;
+    dest_dol.write_all(dol.data.as_slice())?;
 
     println!("Copying practice saves...");
     copy_practice_saves(&patch_data)?;
@@ -73,7 +73,7 @@ fn copy_custom_rel(patch_data: &PatchData) -> anyhow::Result<usize> {
         .read(true)
         .write(true)
         .create(true)
-        .open(&custom_rel_path(patch_data.version))?;
+        .open(custom_rel_path(patch_data.version))?;
 
     Ok(dest_file.write(patch_data.custom_rel)?)
 }

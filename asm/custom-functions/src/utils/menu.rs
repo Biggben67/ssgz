@@ -48,6 +48,7 @@ pub fn get_y_bottom() -> f32 {
     }
 }
 
+#[allow(clippy::new_without_default)]
 impl SimpleMenu {
     pub fn new() -> Self {
         Self {
@@ -140,12 +141,10 @@ impl SimpleMenu {
             let (try_low, try_high) = (curr_line - range / 2, curr_line + range / 2);
             if len > try_high && 0 < try_low {
                 (lower, upper) = (try_low, try_high);
+            } else if len - curr_line > range / 2 {
+                (lower, upper) = (0, range);
             } else {
-                if len - curr_line > range / 2 {
-                    (lower, upper) = (0, range);
-                } else {
-                    (lower, upper) = (len - range, len);
-                }
+                (lower, upper) = (len - range, len);
             }
         }
 

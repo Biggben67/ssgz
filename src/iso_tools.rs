@@ -54,11 +54,7 @@ pub enum GameVersion {
 
 impl GameVersion {
     pub fn is_supported(&self) -> bool {
-        match *self {
-            GameVersion::NTSC1_0 => true,
-            GameVersion::JP => true,
-            _ => false,
-        }
+        matches!(*self, GameVersion::NTSC1_0 | GameVersion::JP)
     }
 
     fn from_hash(hash: [u8; 20]) -> Self {
@@ -117,6 +113,7 @@ pub enum HashMismatchError {
     WrongSupportedVersion(GameVersion, GameVersion),
 }
 
+#[allow(clippy::drop_non_drop)]
 impl WiiIsoExtractor {
     pub fn new_with_version(path: PathBuf, version: GameVersion) -> anyhow::Result<Self> {
         let iso_file = fs::File::open(&path)?;
@@ -183,13 +180,13 @@ impl WiiIsoExtractor {
         let dol = self.partition.partition_reader.read_dol(&mut self.iso)?;
         let mut hasher = Sha1::new();
         hasher.update(&dol);
-        Ok(hasher.finalize().try_into().unwrap())
+        Ok(hasher.finalize().into())
     }
     // Verify that the given ISO has the right DOL hash
     pub fn validate(&mut self) -> Result<(), HashMismatchError> {
         let hash = self
             .get_dol_hash()
-            .map_err(|e| HashMismatchError::BadHashRead(e))?;
+            .map_err(HashMismatchError::BadHashRead)?;
         let found_version = GameVersion::from_hash(hash);
         if found_version == GameVersion::Unknown {
             return Err(HashMismatchError::UnknownVersion);
@@ -230,8 +227,8 @@ impl WiiIsoExtractor {
         callback: &mut T,
     ) -> anyhow::Result<()> {
         let disc_header = self.iso.get_header().clone();
-        let region = self.iso.get_region().clone();
-        let section_path = path.join(format!("{}", self.partition.part));
+        let region = *self.iso.get_region();
+        let section_path = path.join(&self.partition.part);
 
         let section_path_disk = section_path.join("disc");
         create_dir_all(&section_path_disk)?;

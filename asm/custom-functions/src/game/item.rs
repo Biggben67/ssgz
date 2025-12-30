@@ -1,3 +1,4 @@
+#![allow(clippy::zero_prefixed_literal)]
 use core::ffi::c_void;
 
 #[repr(C)]

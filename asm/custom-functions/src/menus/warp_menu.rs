@@ -83,7 +83,7 @@ impl WarpMenu {
         let stage_name = self.get_stage().name;
         for n in 0..8 {
             self.stage_selected[n] = if n < stage_name.len() {
-                stage_name.as_bytes()[n] as u8
+                stage_name.as_bytes()[n]
             } else {
                 0
             };

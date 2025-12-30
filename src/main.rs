@@ -34,7 +34,7 @@ fn fix_macos_working_directory() -> anyhow::Result<()> {
         if let Ok(exe_path) = env::current_exe() {
             let mut current = exe_path.as_path();
             while let Some(parent) = current.parent() {
-                if parent.extension().map_or(false, |ext| ext == "app") {
+                if parent.extension().is_some_and(|ext| ext == "app") {
                     let app_parent = parent.parent().unwrap_or(parent);
                     let app_parent_str = app_parent.to_string_lossy();
 

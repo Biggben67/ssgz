@@ -102,7 +102,7 @@ pub fn should_scroll(button: Buttons) -> bool {
         return frames & 7 == 0;
     }
 
-    return false;
+    false
 }
 
 pub struct ButtonBuffer {

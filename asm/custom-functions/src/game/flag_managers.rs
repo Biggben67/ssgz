@@ -134,24 +134,24 @@ impl SceneflagManager {
     }
     pub fn get_scene_flags() -> *const [u16] {
         let t = unsafe { SCENEFLAG_MANAGER.as_ref().unwrap() };
-        return core::ptr::slice_from_raw_parts::<u16>(
+        core::ptr::slice_from_raw_parts::<u16>(
             t.sceneflags.flag_ptr,
             t.sceneflags.flag_count.into(),
-        );
+        )
     }
     pub fn get_temp_flags() -> *const [u16] {
         let t = unsafe { SCENEFLAG_MANAGER.as_ref().unwrap() };
-        return core::ptr::slice_from_raw_parts::<u16>(
+        core::ptr::slice_from_raw_parts::<u16>(
             t.tempflags.flag_ptr,
             t.tempflags.flag_count.into(),
-        );
+        )
     }
     pub fn get_zone_flags() -> *const [u16] {
         let t = unsafe { SCENEFLAG_MANAGER.as_ref().unwrap() };
-        return core::ptr::slice_from_raw_parts::<u16>(
+        core::ptr::slice_from_raw_parts::<u16>(
             t.zoneflags.flag_ptr,
             t.zoneflags.flag_count.into(),
-        );
+        )
     }
     pub fn set_zone_flag(room: u16, flag: u16, set: bool) {
         if set {

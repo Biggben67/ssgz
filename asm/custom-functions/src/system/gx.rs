@@ -1,6 +1,7 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(unused)]
+#![allow(clippy::zero_prefixed_literal)]
 use core::ffi::c_void;
 
 use super::math::{Matrix34f, Matrix44f};
@@ -509,6 +510,7 @@ pub struct Color {
     pub b: u8,
     pub a: u8,
 }
+#[allow(clippy::identity_op)]
 impl Color {
     pub fn from_u32(clr: u32) -> Self {
         Self {
@@ -519,10 +521,10 @@ impl Color {
         }
     }
     pub fn as_u32(&self) -> u32 {
-        return ((self.r as u32) << 24)
+        ((self.r as u32) << 24)
             | ((self.g as u32) << 16)
             | ((self.b as u32) << 8)
-            | ((self.a as u32) << 0);
+            | ((self.a as u32) << 0)
     }
 }
 
@@ -584,7 +586,7 @@ extern "C" {
 }
 
 pub fn GXWriteFifo<T>(val: T) {
-    return unsafe { core::ptr::write_volatile((0xCC008000 as *mut T), val) };
+    unsafe { core::ptr::write_volatile((0xCC008000 as *mut T), val) }
 }
 
 pub fn GXPosition3f32(x: f32, y: f32, z: f32) {

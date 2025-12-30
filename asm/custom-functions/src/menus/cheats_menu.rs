@@ -141,25 +141,17 @@ pub fn update_cheats() {
                 player.stamina_amount = 1_000_000;
             }
         }
-        if CHEATS[2].active {
-            if ItemflagManager::get_counter_by_index(4) < 20 {
-                ItemflagManager::increase_counter(4, 20);
-            }
+        if CHEATS[2].active && ItemflagManager::get_counter_by_index(4) < 20 {
+            ItemflagManager::increase_counter(4, 20);
         }
-        if CHEATS[3].active {
-            if ItemflagManager::get_counter_by_index(2) < 10 {
-                ItemflagManager::increase_counter(2, 10);
-            }
+        if CHEATS[3].active && ItemflagManager::get_counter_by_index(2) < 10 {
+            ItemflagManager::increase_counter(2, 10);
         }
-        if CHEATS[4].active {
-            if ItemflagManager::get_counter_by_index(1) < 20 {
-                ItemflagManager::increase_counter(1, 20);
-            }
+        if CHEATS[4].active && ItemflagManager::get_counter_by_index(1) < 20 {
+            ItemflagManager::increase_counter(1, 20);
         }
-        if CHEATS[5].active {
-            if ItemflagManager::get_counter_by_index(0) < 9900 {
-                ItemflagManager::increase_counter(0, 9900);
-            }
+        if CHEATS[5].active && ItemflagManager::get_counter_by_index(0) < 9900 {
+            ItemflagManager::increase_counter(0, 9900);
         }
         if CHEATS[6].active && ButtonBuffer::check_combo_down_up(DPAD_RIGHT, C) {
             if let Some(player) = player::as_mut() {

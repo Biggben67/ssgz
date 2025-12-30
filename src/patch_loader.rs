@@ -68,6 +68,6 @@ fn parse_diffs(raw_diff_str: &'static str) -> PatchDiffMap {
         .get("main.dol")
         .unwrap()
         .iter()
-        .map(|(addr, patch)| (addr.clone(), patch.data.clone()))
+        .map(|(addr, patch)| (*addr, patch.data.clone()))
         .collect()
 }

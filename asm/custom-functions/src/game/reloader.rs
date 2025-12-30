@@ -70,11 +70,11 @@ pub fn get_ptr() -> *mut Reloader {
 }
 
 pub fn get_spawn_master() -> &'static mut SpawnStruct {
-    return unsafe { &mut SPAWN_MASTER };
+    unsafe { &mut SPAWN_MASTER }
 }
 
 pub fn get_spawn_slave() -> &'static mut SpawnStruct {
-    return unsafe { &mut SPAWN_SLAVE };
+    unsafe { &mut SPAWN_SLAVE }
 }
 
 pub fn set_reload_trigger(trigger: u8) {
@@ -89,6 +89,7 @@ pub fn set_save_prompt_flag() {
     unsafe { (*get_ptr()).save_prompt_flag = 1; }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn trigger_entrance(
     stage_name: *const u8,
     room: u8,
@@ -126,5 +127,5 @@ pub fn soft_reset() {
 }
 
 pub fn in_reset() -> bool {
-    return unsafe { (*reload_color_fader).other_state == 1};
+    unsafe { (*reload_color_fader).other_state == 1}
 }

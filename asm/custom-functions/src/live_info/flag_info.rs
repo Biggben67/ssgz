@@ -1,3 +1,4 @@
+#![allow(clippy::identity_op)]
 use core::fmt::Write;
 
 use crate::game::flag_managers::SceneflagManager;
