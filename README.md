@@ -1,4 +1,4 @@
-# ssgz 0.3.1 (name pending)
+# ssgz 0.4.0 (name pending)
 
 A ROM hack for *The Legend of Zelda: Skyward Sword* aimed to help out speedrunners with practice and research.
 
@@ -106,6 +106,9 @@ The Tricks Menu contains some specific functionality to help practice tricks and
 - **Guay Deathwarp** - When activated, you will be loaded into the Sky as though you just performed the Sky RBW in most early game Skyloft routes, your health will be set to 6 hearts, and the flag for the Fi text near the Faron Pillar will be unset, allowing you to practice the deathwarp with the guay.
 - **Keese Yeet** - When activated, you will be loaded into the Earth Temple (positioned for Keese Yeet) and given the Goddess Sword.
 - **Extending Blow** - When activated, you will be loaded into Deep Woods (positioned to setup for Extending Blow), and given the B-Wheel, Slingshot, and Goddess Sword.
+- **Cutscene Skip Wrong Warp** - When activated, the Gate of Time Skip practice save (from All Dungeons) will be loaded, and the game will eventually teleport you to the Sealed Temple in BiT with 0 health, from which you may perform Death Trick and the subsequent File Dupe. It will evaluate whether or not you missed both tricks' frame windows. Pressing D-Pad right will soft reset and restart the trick sequence.
+- **Faron Dive** - When activated, the game will soft reset, and you will eventually be teleported to the Sky, from which you may practice diving to the Faron Pillar. Information on-screen will show your angle relative to the pillar, your current speed, distance, and relative altitude.
+- **Lumpy Dive** - See above, but with the backdoor of the Lumpy Pumpkin as your target.
 - **Ghirahim 1** - When activated, you will be loaded into the Ghirahim fight in Skyview Temple, with the Goddess Sword and at 2 hearts. Text on-screen will show his health.
 - **Scaldera** - When activated, you will be loaded into the Scaldera fight (skipping directly to the spawn cutscene) in Earth Temple, with the Goddess Sword and a full Bomb Bag at 6 hearts. Text on-screen will show his health.
 - **Moldarach** - When activated, you will be loaded into the Moldarach fight in Lanayru Mining Facility, with a shield, the Gust Bellows, Clawshots, Slingshot, and *at least* the Goddess Sword.

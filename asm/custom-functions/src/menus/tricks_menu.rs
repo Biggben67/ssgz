@@ -39,6 +39,24 @@ const TRICKS: [Trick; 17] = [
         on_select: Some(reload_eb),
     },
     Trick {
+        name:   "Cutscene Skip Wrong Warp",
+        description: "Practice Death Trick & CSWW (and file dupe).",
+        associated_enum: ActiveTrick::Csww(CswwState::DoingReset),
+        on_select: Some(reload_csww),
+    },
+    Trick {
+        name:   "Faron Dive",
+        description: "Practice diving to Faron in BiT.",
+        associated_enum: ActiveTrick::FaronDive(BiTState::DoingReset),
+        on_select: Some(reloader::soft_reset),
+    },
+    Trick {
+        name:   "Lumpy Dive",
+        description: "Practice diving to the Lumpy Pumpkin in BiT.",
+        associated_enum: ActiveTrick::LumpyDive(BiTState::DoingReset),
+        on_select: Some(reloader::soft_reset),
+    },
+    Trick {
         name:   "Ghirahim 1",
         description: "Practice fighting Ghirahim in Skyview Temple (with Goddess Sword).",
         associated_enum: ActiveTrick::Ghirahim1,
@@ -119,24 +137,6 @@ const TRICKS: [Trick; 17] = [
         description: "Practice fighting Demise at the end of the game.",
         associated_enum: ActiveTrick::Demise,
         on_select: Some(reload_demise),
-    },
-    Trick {
-        name:   "Cutscene Skip Wrong Warp",
-        description: "Practice Death Trick & CSWW (and file dupe).",
-        associated_enum: ActiveTrick::Csww(CswwState::DoingReset),
-        on_select: Some(reload_csww),
-    },
-    Trick {
-        name:   "Faron Dive",
-        description: "Practice diving to Faron in BiT.",
-        associated_enum: ActiveTrick::FaronDive(BiTState::DoingReset),
-        on_select: Some(reloader::soft_reset),
-    },
-    Trick {
-        name:   "Lumpy Dive",
-        description: "Practice diving to the Lumpy Pumpkin in BiT.",
-        associated_enum: ActiveTrick::LumpyDive(BiTState::DoingReset),
-        on_select: Some(reloader::soft_reset),
     }
 ];
 
