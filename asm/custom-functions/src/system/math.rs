@@ -81,10 +81,8 @@ pub fn rad_to_deg(ang: f32) -> f32 {
 impl Vec3f {
     pub fn normalize(&mut self) {
         let len = self.len();
-        if len != 0f32 {
-            self.x /= len;
-            self.y /= len;
-            self.z /= len;
+        if len >= 0.00001f32 {
+            self.mul(1.0f32 / len);
         }
     }
 
@@ -96,8 +94,15 @@ impl Vec3f {
         sqrt(self.len_squared())
     }
 
-    pub fn dot(a: &Vec3f, b: &Vec3f) -> f32 {
+    pub fn dot(a: &Self, b: &Self) -> f32 {
         a.x * b.x + a.y * b.y + a.z * b.z
+    }
+
+    pub fn cross(a: &Self, b: &Self) -> Self {
+        let x = a.y * b.z - a.z * b.y;
+        let y = a.z * b.x - a.x * b.z;
+        let z = a.x * b.y - a.y * b.x;
+        Self { x, y, z }
     }
 
     pub fn from_short(ang: i16) -> Self {
@@ -109,9 +114,15 @@ impl Vec3f {
         }
     }
 
-    pub fn sub(&mut self, other: &Vec3f) {
+    pub fn sub(&mut self, other: &Self) {
         self.x -= other.x;
         self.y -= other.y;
         self.z -= other.z;
+    }
+
+    pub fn mul(&mut self, scalar: f32) {
+        self.x *= scalar;
+        self.y *= scalar;
+        self.z *= scalar;
     }
 }
