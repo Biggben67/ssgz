@@ -1,6 +1,5 @@
 use crate::{
-    game::file_manager, game::flag_managers::{StoryflagManager, SceneflagManager, ItemflagManager, DungeonflagManager}, game::player, game::reloader, system::button::*,
-    utils::menu::SimpleMenu, utils::console::Console, menus::main_menu, game::events::ActorEventFlowMgr, game::actor::get_first_enemy
+    game::{actor::get_first_enemy, events::ActorEventFlowMgr, file_manager, flag_managers::{DungeonflagManager, ItemflagManager, SceneflagManager, StoryflagManager}, player, reloader::{self, get_spawn_master, get_spawn_slave}}, menus::main_menu, system::button::*, utils::{console::Console, menu::SimpleMenu, practice_saves::load_practice_save}
 };
 
 use core::fmt::Write;
@@ -14,7 +13,7 @@ pub struct Trick {
     on_select: Option<fn()>,
 }
 
-const TRICKS: [Trick; 14] = [
+const TRICKS: [Trick; 15] = [
     Trick {
         name:   "Wing Ceremony Cutscene Skip",
         description: "Practice WCCS Save Prompt sidehop (Kills Link for faster reloads).",
@@ -36,13 +35,13 @@ const TRICKS: [Trick; 14] = [
     Trick {
         name:   "Extending Blow",
         description: "Practice the Extending Blow in Deep Woods.",
-        associated_enum: ActiveTrick::EB,
+        associated_enum: ActiveTrick::ExtendingBlow,
         on_select: Some(reload_eb),
     },
     Trick {
         name:   "Ghirahim 1",
         description: "Practice fighting Ghirahim in Skyview Temple (with Goddess Sword).",
-        associated_enum: ActiveTrick::G1,
+        associated_enum: ActiveTrick::Ghirahim1,
         on_select: Some(reload_g1),
     },
     Trick {
@@ -80,7 +79,7 @@ const TRICKS: [Trick; 14] = [
     Trick {
         name:   "Ghirahim 2",
         description: "Practice fighting Ghirahim in Fire Sanctuary.",
-        associated_enum: ActiveTrick::G2,
+        associated_enum: ActiveTrick::Ghirahim2(G2State::Phase1),
         on_select: Some(reload_g2),
     },
     /*
@@ -112,7 +111,7 @@ const TRICKS: [Trick; 14] = [
     Trick {
         name:   "Ghirahim 3",
         description: "Practice fighting Ghirahim in Hylia's Realm.",
-        associated_enum: ActiveTrick::G3,
+        associated_enum: ActiveTrick::Ghirahim3,
         on_select: Some(reload_g3),
     },
     Trick {
@@ -121,6 +120,12 @@ const TRICKS: [Trick; 14] = [
         associated_enum: ActiveTrick::Demise,
         on_select: Some(reload_demise),
     },
+    Trick {
+        name:   "Cutscene Skip Wrong Warp",
+        description: "Practice Death Trick & CSWW (and file dupe).",
+        associated_enum: ActiveTrick::Csww(CswwState::DoingReset),
+        on_select: Some(reload_csww),
+    }
 ];
 
 #[derive(PartialEq, Eq)]
@@ -130,25 +135,44 @@ enum MenuState {
 }
 
 #[derive(PartialEq, Eq, Copy, Clone)]
+enum G2State {
+    Phase1,
+    BetweenPhases,
+    Phase2
+}
+
+#[derive(PartialEq, Eq, Copy, Clone)]
+enum CswwState {
+    DoingReset,
+    DeathTrick,
+    Failed,
+    FileDupe(bool),
+    FileDupeEval(bool),
+}
+
+
+// Some tricks have an associated u8 value to track partial progress
+#[derive(PartialEq, Eq, Copy, Clone)]
 enum ActiveTrick {
     None,
     Wccs,
     Guay,
     KeeseYeet,
-    EB,
-    G1,
+    ExtendingBlow,
+    Ghirahim1,
     Scaldera,
     Moldarach,
     // Imp1,
     Koloktos,
     Tentalus,
-    G2,
+    Ghirahim2(G2State),
     // Imp2,
     Bilocyte,
     //Imp3,
     Horde,
-    G3,
+    Ghirahim3,
     Demise,
+    Csww(CswwState),
 }
 
 pub struct TricksMenu {
@@ -184,7 +208,8 @@ impl super::Menu for TricksMenu {
                     TricksMenu::disable();
                 } else if is_pressed(A) {
                     let trick = &TRICKS[tricks_menu.cursor as usize];
-                    if tricks_menu.active_trick == trick.associated_enum {
+                    let is_active = core::mem::discriminant(&trick.associated_enum) == core::mem::discriminant(&tricks_menu.active_trick);
+                    if is_active {
                         tricks_menu.active_trick = ActiveTrick::None;
                     } else {
                         tricks_menu.active_trick = trick.associated_enum;
@@ -211,7 +236,7 @@ impl super::Menu for TricksMenu {
             menu.add_entry_fmt(format_args!(
                 "{} [{}]",
                 trick.name,
-                if trick.associated_enum == tricks_menu.active_trick { "x" } else { "" }
+                if core::mem::discriminant(&trick.associated_enum) == core::mem::discriminant(&tricks_menu.active_trick) { "x" } else { "" }
             ), trick.description);
         }
         menu.set_cursor(tricks_menu.cursor);
@@ -226,6 +251,7 @@ impl super::Menu for TricksMenu {
 
 extern "C" {
     static mut FRAME_COUNT: u32;
+    static mut TITLE_LOADER: u8; // probably wrong but AP reads this byte to check if on title screen
 }
 
 fn get_boss_health() -> Option<u32> {
@@ -239,32 +265,44 @@ fn is_boss_dead() -> bool {
     }
 }
 
-// The buffer will stop accepting A presses on the frame that is 3 frames too late
+// For WCCS, the buffer will stop accepting A presses on the frame that is 3 frames too late
+// For CSWW, the buffer will stop accepting A presses when the frame counter starts up again
 #[link_section = "data"]
-pub static mut WCCS_INPUT_BUFFER: u8 = 0;
+pub static mut A_PRESS_BUFFER: u32 = 0;
+
+#[link_section = "data"]
+pub static mut TWO_HOLD_BUFFER: u32 = 0;
+
 
 // Frames "-2" and "-1" are the good frames, but there is a 3 frame input delay
 // So frame 5 is actually 3 frames late, and frames 1 and 2 are the good ones
-const THREE_FRAMES_LATE: u32 = 5;
+const WCCS_THREE_FRAMES_LATE: u32 = 5;
+
+const CSWW_TIMER_CONTINUE_FRAME: u32 = 161;
+const CSWW_MAP_UPDATE: u32 = 178; // Map changes to File 1's map around this time
+const CSWW_FILE_DUPE_END_FRAME: u32 = 32;
 
 pub fn update_buffer() {
     // The buffer's bits store whether or not A was pressed in the last 8 frames
     unsafe {
-        WCCS_INPUT_BUFFER <<= 1;
+        A_PRESS_BUFFER <<= 1;
+        TWO_HOLD_BUFFER <<= 1;
         if is_pressed(A) {
-            WCCS_INPUT_BUFFER += 1;
+            A_PRESS_BUFFER += 1;
+        }
+        if is_down(TWO) {
+            TWO_HOLD_BUFFER += 1;
         }
     }
 }
 
 fn eval_wccs() {
-    let buffer = unsafe {WCCS_INPUT_BUFFER};
+    let buffer = unsafe {A_PRESS_BUFFER};
     let mut console = Console::with_pos_and_size(0f32, 378f32, 120f32, 60f32);
     console.set_bg_color(0x0000007F);
     console.set_font_size(0.5f32);
     console.set_dynamic_size(true);
     // We're checking inputs 3 frames after the window closed
-    // TODO - console color doesn't seem to work
     if buffer & 0x10 != 0 {
         // 4 frames ago
         console.set_font_color(0x00FF00FF);
@@ -326,11 +364,11 @@ fn display_boss_health(name: &'static str) {
 
 fn check_wccs() {
     let count = unsafe {FRAME_COUNT};
-    if count < THREE_FRAMES_LATE {
+    if count < WCCS_THREE_FRAMES_LATE {
         update_buffer();
     }
     // kinda hacky but prevents eye-blinding reloads from the display
-    if count >= THREE_FRAMES_LATE && count & 0x80000000 == 0 {
+    if count >= WCCS_THREE_FRAMES_LATE && count & 0x80000000 == 0 {
         eval_wccs();
         // Kill Link for faster reloads
         file_manager::set_current_health(0);
@@ -811,6 +849,123 @@ fn reload_eb() {
     reloader::set_reload_trigger(5);
 }
 
+const CSWW_SAVE: &str = "/saves/All Dungeons/Gate of Time Skip";
+
+fn reload_csww() {
+    load_practice_save(CSWW_SAVE);
+}
+
+fn load_csww_entrance() {
+    reloader::trigger_entrance(
+        b"F402\0".as_ptr(),
+        2,
+        2,
+        2, // Entrance 2 (for no entrance animation)
+        0,
+        0,
+        0,
+        0xF,
+        0xFF,
+    );
+    file_manager::set_current_health(0);
+
+    reloader::set_reload_trigger(5);
+}
+
+fn eval_death_trick_fail() {
+    let buffer = unsafe {A_PRESS_BUFFER};
+    let mut console = Console::with_pos_and_size(0f32, 378f32, 120f32, 60f32);
+    console.set_bg_color(0x0000007F);
+    console.set_font_size(0.5f32);
+    console.set_dynamic_size(true);
+    // let _ = console.write_fmt(format_args!("{:08X} - ", buffer));
+    if buffer >= 0x10000 {
+        // early
+        let frames = 16 - buffer.leading_zeros();
+        match frames {
+            1 => console.set_font_color(0xFFFF00FF),
+            2 => console.set_font_color(0xFFC000FF),
+            _ => console.set_font_color(0xFF0000FF),
+        };
+        let _ = console.write_fmt(format_args!("{} {} early", frames, if frames == 1 {"frame"} else {"frames"}));
+    } else {
+        // late
+        let frames = buffer.leading_zeros() - 17;
+        match frames {
+            1 => console.set_font_color(0xFFFF00FF),
+            2 => console.set_font_color(0xFFC000FF),
+            _ => console.set_font_color(0xFF0000FF),
+        };
+        let _ = console.write_fmt(format_args!("{} {} late", frames, if frames == 1 {"frame"} else {"frames"}));
+    }
+    let _ = console.write_fmt(format_args!("\nTry again by pressing D-Pad Left."));
+    console.draw(false);
+}
+
+fn eval_death_trick_success(first_frame: bool) {
+    let mut console = Console::with_pos_and_size(0f32, 378f32, 120f32, 60f32);
+    console.set_bg_color(0x0000007F);
+    console.set_font_size(0.5f32);
+    console.set_dynamic_size(true);
+    console.set_font_color(0x00FF00FF);
+    // let _ = console.write_fmt(format_args!("{:08X} - ", buffer));
+    let _ = console.write_fmt(format_args!("got death trick ({} frame)", if first_frame {"first"} else {"second"}));
+    // let _ = console.write_fmt(format_args!("\nTry again by pressing D-Pad Left."));
+    console.draw(false);
+}
+
+fn eval_file_dupe(first_frame: bool) {
+    let mut console = Console::with_pos_and_size(0f32, 378f32, 120f32, 60f32);
+    console.set_bg_color(0x0000007F);
+    console.set_font_size(0.5f32);
+    console.set_dynamic_size(true);
+    console.set_font_color(0x00FF00FF);
+    // let _ = console.write_fmt(format_args!("{:08X} - ", buffer));
+    let _ = console.write_fmt(format_args!("got death trick ({} frame)\n", if first_frame {"first"} else {"second"}));
+    let a_buffer = unsafe {A_PRESS_BUFFER};
+    let two_buffer = unsafe {TWO_HOLD_BUFFER};
+
+    let two_hold_start = two_buffer.leading_zeros() as i32;
+    let relevant_a_mask = (1 << 13) - 1;
+    let a_press = a_buffer.leading_zeros() as i32;
+    let relevant_a_press = (a_buffer & relevant_a_mask).leading_zeros() as i32;
+    let frame_diff = relevant_a_press - two_hold_start;
+    // let _ = console.write_fmt(format_args!("{:08X} ({}) - ", a_buffer, relevant_a_press));
+    // let _ = console.write_fmt(format_args!("{:08X} ({}) - ", two_buffer, two_hold_start));
+    if two_hold_start > 22 {
+        let frames = two_hold_start - 22;
+        match frames {
+            1 => console.set_font_color(0xFFFF00FF),
+            2 => console.set_font_color(0xFFC000FF),
+            _ => console.set_font_color(0xFF0000FF),
+        };
+        let _ = console.write_fmt(format_args!("2 press was {} {} late", frames, if frames == 1 {"frame"} else {"frames"}));
+    } else if frame_diff > 2 {
+        if a_press - two_hold_start <= 2 {
+            // it's possible the 2 press was also too early for this to be possible at all, but the A press definitely was too
+            let frames = 19 - a_press;
+            match frames {
+                1 => console.set_font_color(0xFFFF00FF),
+                2 => console.set_font_color(0xFFC000FF),
+                _ => console.set_font_color(0xFF0000FF),
+            };
+            let _ = console.write_fmt(format_args!("A press was {} {} early", frames, if frames == 1 {"frame"} else {"frames"}));
+        } else {
+            let frames = frame_diff - 2;
+            match frames {
+                1 => console.set_font_color(0xFFFF00FF),
+                2 => console.set_font_color(0xFFC000FF),
+                _ => console.set_font_color(0xFF0000FF),
+            };
+            let _ = console.write_fmt(format_args!("A press was {} {} too late relative to the 2 press", frames, if frames == 1 {"frame"} else {"frames"}));
+        }
+    } else {
+        let _ = console.write_fmt(format_args!("got file dupe"));
+    }
+    let _ = console.write_fmt(format_args!("\nTry again by pressing D-Pad Left."));
+    console.draw(false);
+}
+
 pub fn update_tricks() {
     let tricks_menu: &mut TricksMenu = unsafe { &mut TRICKS_MENU };
 
@@ -847,7 +1002,7 @@ pub fn update_tricks() {
                 }
             }
         },
-        ActiveTrick::EB => {
+        ActiveTrick::ExtendingBlow => {
             if ButtonBuffer::check_combo_down_up(DPAD_LEFT, C) {
                 reload_eb();
             } else if let Some(link) = player::as_mut() {
@@ -858,7 +1013,7 @@ pub fn update_tricks() {
                 }
             }
         },
-        ActiveTrick::G1 => {
+        ActiveTrick::Ghirahim1 => {
             if is_pressed(DPAD_LEFT) || is_boss_dead() {
                 reload_g1();
             }
@@ -869,7 +1024,7 @@ pub fn update_tricks() {
             if is_pressed(DPAD_LEFT) || is_boss_dead() {
                 reload_scaldera();
             }
-            
+    
             if let Some(link) = player::as_mut() {
                 // Bounding box near cutscene trigger
                 let should_set_zoneflags = link.pos.x > 0f32 && link.pos.y > 7400f32 && link.pos.z < -20000f32 && link.pos.y < 7600f32;
@@ -914,11 +1069,34 @@ pub fn update_tricks() {
 
             DungeonflagManager::set_to_value(3, 0); // Unset boss beaten dungeonflag
         },
-        ActiveTrick::G2 => {
-            // This also sets super late, but he goes to 0 health in phase 1 so :(
-            if is_pressed(DPAD_LEFT) || StoryflagManager::check(84) {
+        ActiveTrick::Ghirahim2(state) => {
+            if is_pressed(DPAD_LEFT) {
+                tricks_menu.active_trick = ActiveTrick::Ghirahim2(G2State::Phase1);
                 reload_g2();
             }
+            // State transitions
+            match state {
+                G2State::Phase1 => {
+                    if is_boss_dead() {
+                        // Health at 0, move to next state
+                        tricks_menu.active_trick = ActiveTrick::Ghirahim2(G2State::BetweenPhases);
+                    }
+                },
+                G2State::BetweenPhases => {
+                    if !is_boss_dead() {
+                        // Health is nonzero, second phase has begun
+                        tricks_menu.active_trick = ActiveTrick::Ghirahim2(G2State::Phase2);
+                    }
+                },
+                G2State::Phase2 => {
+                    if is_boss_dead() {
+                        // Health is 0 again, boss defeated
+                        tricks_menu.active_trick = ActiveTrick::Ghirahim2(G2State::Phase1);
+                        reload_g2();
+                    }
+                },
+            };
+            
             DungeonflagManager::set_to_value(3, 0); // Unset boss beaten dungeonflag
             display_boss_health("Ghirahim");
         },
@@ -933,7 +1111,7 @@ pub fn update_tricks() {
                 reload_horde();
             }
         },
-        ActiveTrick::G3 => {
+        ActiveTrick::Ghirahim3 => {
             // Hylia's Realm layer 15 = post-G3 cutscene
             if is_pressed(DPAD_LEFT) || reloader::get_spawn_slave().layer == 15 {
                 reload_g3();
@@ -945,22 +1123,60 @@ pub fn update_tricks() {
                 reload_demise();
             }
         },
-        /*
-        ActiveTrick::Imp1 => {
-            if is_pressed(DPAD_LEFT) || StoryflagManager::check(131) {
-                reload_imp1();
+        ActiveTrick::Csww(state) => {
+            let frame_count = unsafe { FRAME_COUNT };
+            match state {
+                CswwState::DoingReset => {
+                    if frame_count == 1 {
+                        tricks_menu.active_trick = ActiveTrick::Csww(CswwState::DeathTrick);
+                        load_csww_entrance();
+                    }
+                },
+                CswwState::DeathTrick => {
+                    if is_pressed(DPAD_LEFT) {
+                        tricks_menu.active_trick = ActiveTrick::Csww(CswwState::DoingReset);
+                        reloader::soft_reset();
+                    } else if frame_count < CSWW_TIMER_CONTINUE_FRAME {
+                        update_buffer();
+                    } else {
+                        let spawn_master = get_spawn_master();
+                        if spawn_master.name[1] == b'2' { // F200 = Eldin, the stage it's momentarily using during death trick
+                            let buffer = unsafe {&mut A_PRESS_BUFFER};
+                            tricks_menu.active_trick = ActiveTrick::Csww(CswwState::FileDupe(*buffer & 0x8000 != 0));
+                            *buffer = 0;
+                        } else {
+                            tricks_menu.active_trick = ActiveTrick::Csww(CswwState::Failed);
+                        }
+                    }
+                },
+                CswwState::FileDupe(first_frame) => {
+                    eval_death_trick_success(first_frame);
+
+                    if frame_count == CSWW_FILE_DUPE_END_FRAME {
+                        tricks_menu.active_trick = ActiveTrick::Csww(CswwState::FileDupeEval(first_frame));
+                    } else {
+                        update_buffer();
+                    }
+                },
+                CswwState::Failed => {
+                    if is_pressed(DPAD_LEFT) {
+                        tricks_menu.active_trick = ActiveTrick::Csww(CswwState::DoingReset);
+                        reloader::soft_reset();
+                    }
+
+                    eval_death_trick_fail();
+                },
+                CswwState::FileDupeEval(first_frame) => {
+                    if is_pressed(DPAD_LEFT) {
+                        tricks_menu.active_trick = ActiveTrick::Csww(CswwState::DoingReset);
+                        reloader::soft_reset();
+                    }
+
+                    eval_file_dupe(first_frame);
+                }
+
             }
         },
-        ActiveTrick::Imp2 => {
-            if is_pressed(DPAD_LEFT) || StoryflagManager::check(132) {
-                reload_imp2();
-            }
-        },
-        ActiveTrick::Imp3 => {
-            if is_pressed(DPAD_LEFT) || StoryflagManager::check(133) {
-                reload_imp3();
-            }
-        },
-        */
     }
 }
+
