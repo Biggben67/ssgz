@@ -1,5 +1,5 @@
 use crate::{
-    game::{actor::get_first_enemy, events::ActorEventFlowMgr, file_manager, flag_managers::{DungeonflagManager, ItemflagManager, SceneflagManager, StoryflagManager}, player, reloader::{self, get_spawn_master, get_spawn_slave}}, menus::main_menu, system::button::*, utils::{console::Console, menu::SimpleMenu, practice_saves::load_practice_save}
+    game::{actor::get_first_enemy, events::ActorEventFlowMgr, file_manager, flag_managers::{DungeonflagManager, ItemflagManager, SceneflagManager, StoryflagManager}, player, reloader::{self, get_spawn_master, get_spawn_slave}}, menus::main_menu, system::{button::*, math::*}, utils::{console::Console, menu::SimpleMenu, practice_saves::load_practice_save}
 };
 
 use core::fmt::Write;
@@ -13,7 +13,7 @@ pub struct Trick {
     on_select: Option<fn()>,
 }
 
-const TRICKS: [Trick; 15] = [
+const TRICKS: [Trick; 17] = [
     Trick {
         name:   "Wing Ceremony Cutscene Skip",
         description: "Practice WCCS Save Prompt sidehop (Kills Link for faster reloads).",
@@ -125,6 +125,18 @@ const TRICKS: [Trick; 15] = [
         description: "Practice Death Trick & CSWW (and file dupe).",
         associated_enum: ActiveTrick::Csww(CswwState::DoingReset),
         on_select: Some(reload_csww),
+    },
+    Trick {
+        name:   "Faron Dive",
+        description: "Practice diving to Faron in BiT.",
+        associated_enum: ActiveTrick::FaronDive(BiTState::DoingReset),
+        on_select: Some(reloader::soft_reset),
+    },
+    Trick {
+        name:   "Lumpy Dive",
+        description: "Practice diving to the Lumpy Pumpkin in BiT.",
+        associated_enum: ActiveTrick::LumpyDive(BiTState::DoingReset),
+        on_select: Some(reloader::soft_reset),
     }
 ];
 
@@ -150,6 +162,11 @@ enum CswwState {
     FileDupeEval(bool),
 }
 
+#[derive(PartialEq, Eq, Copy, Clone)]
+enum BiTState {
+    DoingReset,
+    InTrick,
+}
 
 // Some tricks have an associated u8 value to track partial progress
 #[derive(PartialEq, Eq, Copy, Clone)]
@@ -173,6 +190,8 @@ enum ActiveTrick {
     Ghirahim3,
     Demise,
     Csww(CswwState),
+    FaronDive(BiTState),
+    LumpyDive(BiTState),
 }
 
 pub struct TricksMenu {
@@ -872,6 +891,28 @@ fn load_csww_entrance() {
     reloader::set_reload_trigger(5);
 }
 
+fn load_sky_entrance() {
+    StoryflagManager::set_to_value(36, 0);
+    StoryflagManager::set_to_value(46, 1);
+    StoryflagManager::set_to_value(198, 1);
+    StoryflagManager::set_to_value(27, 1);
+    // StoryflagManager::set_to_value(364, 0);
+    StoryflagManager::do_commit();
+    reloader::trigger_entrance(
+        b"F020\0".as_ptr(),
+        0,
+        3, // Layer 3
+        20, // Entrance 20
+        2,
+        2,
+        1,
+        0xF,
+        0xFF,
+    );
+    reloader::set_reload_trigger(5);
+    file_manager::set_current_health(24);
+}
+
 fn eval_death_trick_fail() {
     let buffer = unsafe {A_PRESS_BUFFER};
     let mut console = Console::with_pos_and_size(0f32, 378f32, 120f32, 60f32);
@@ -965,6 +1006,48 @@ fn eval_file_dupe(first_frame: bool) {
     let _ = console.write_fmt(format_args!("\nTry again by pressing D-Pad Left."));
     console.draw(false);
 }
+
+fn eval_dive(target: Vec3f) {
+    if let Some(player) = player::as_mut() {
+        let pos = player.pos;
+        let angle = player.angle.y;
+        let fwd = Vec3f::from_short(angle);
+        let speed = player.forward_speed;
+        let mut to_target = target;
+        to_target.sub(&pos);
+        let height_diff = -to_target.y;
+        to_target.y = 0f32;
+        to_target.normalize();
+        let dot = Vec3f::dot(&fwd, &to_target);
+        let offset_angle = rad_to_deg(acos(dot));
+        /*
+        let mut console = Console::with_pos_and_size(0f32, 120f32, 120f32, 85f32);
+        console.set_bg_color(0x0000007F);
+        console.set_font_color(0xFFFFFFFF);
+        console.set_font_size(0.25f32);
+        console.set_dynamic_size(true);
+        let _ = console.write_fmt(format_args!("pos:\nx:{x:>9.2}\ny:{y:>9.2}\nz:{z:>9.2}\n"));
+        let _ = console.write_fmt(format_args!("angle: {angle}\n"));
+        let _ = console.write_fmt(format_args!("speed: {speed:.2}"));
+        console.draw(true);
+        */
+        let mut console = Console::with_pos_and_size(0f32, 378f32, 120f32, 60f32);
+        console.set_bg_color(0x0000007F);
+        console.set_font_size(0.5f32);
+        console.set_dynamic_size(true);
+        console.set_font_color(0xFFFFFFFF);
+        // let _ = console.write_fmt(format_args!("{:08X} - ", buffer));
+        let _ = console.write_fmt(format_args!("angle diff: {offset_angle:.1} degrees\n"));
+        let _ = console.write_fmt(format_args!("speed: {speed:.1}\n"));
+        let _ = console.write_fmt(format_args!("height diff: {height_diff:.1}"));
+        // let _ = console.write_fmt(format_args!("\nTry again by pressing D-Pad Left."));
+        console.draw(false);
+    }
+    
+}
+
+const LUMPY_DOOR: Vec3f = Vec3f {x: 102930f32, y: -10522f32, z: 43199f32};
+const FARON_PILLAR: Vec3f = Vec3f {x: 39582f32, y: -20044f32, z: 39379f32};
 
 pub fn update_tricks() {
     let tricks_menu: &mut TricksMenu = unsafe { &mut TRICKS_MENU };
@@ -1098,7 +1181,7 @@ pub fn update_tricks() {
                     }
                 },
             };
-            
+    
             DungeonflagManager::set_to_value(3, 0); // Unset boss beaten dungeonflag
             display_boss_health("Ghirahim");
         },
@@ -1177,6 +1260,44 @@ pub fn update_tricks() {
                     eval_file_dupe(first_frame);
                 }
 
+            }
+        },
+        ActiveTrick::FaronDive(state) => {
+            let frame_count = unsafe { FRAME_COUNT };
+            match state {
+                BiTState::DoingReset => {
+                    if frame_count == 1 {
+                        tricks_menu.active_trick = ActiveTrick::FaronDive(BiTState::InTrick);
+                        load_sky_entrance();
+                    }
+                },
+                BiTState::InTrick => {
+                    if is_pressed(DPAD_LEFT) {
+                        tricks_menu.active_trick = ActiveTrick::FaronDive(BiTState::DoingReset);
+                        reloader::soft_reset();
+                    }
+
+                    eval_dive(FARON_PILLAR);
+                },
+            }
+        },
+        ActiveTrick::LumpyDive(state) => {
+            let frame_count = unsafe { FRAME_COUNT };
+            match state {
+                BiTState::DoingReset => {
+                    if frame_count == 1 {
+                        tricks_menu.active_trick = ActiveTrick::LumpyDive(BiTState::InTrick);
+                        load_sky_entrance();
+                    }
+                },
+                BiTState::InTrick => {
+                    if is_pressed(DPAD_LEFT) {
+                        tricks_menu.active_trick = ActiveTrick::LumpyDive(BiTState::DoingReset);
+                        reloader::soft_reset();
+                    }
+
+                    eval_dive(LUMPY_DOOR);
+                },
             }
         },
     }
