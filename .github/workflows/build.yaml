@@ -16,12 +16,6 @@ jobs:
             artifact: windows
             artifact_suffix: ""
             target_path: "windows/app"
-          - name: MacOS Build x64
-            os: macos-13
-            target: x86_64-apple-darwin
-            artifact: macos
-            artifact_suffix: _intel
-            target_path: "macos"
           - name: MacOS Build arm64
             os: macos-14
             target: aarch64-apple-darwin
