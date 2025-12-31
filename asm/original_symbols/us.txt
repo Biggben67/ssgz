@@ -191,4 +191,9 @@ main.dol:
     # ----------------- REL Stuffs ------------------------------
     __ct__DynamicModuleControl: 0x802df3d0
     DynamicModuleControlBase__link: 0x802DF1F0
-
+    # ----------------- MATH ------------------------------------
+    EGGSqrt: 0x8049AB60
+    EGGSin: 0x8049ABB0
+    EGGCos: 0x8049ABE0
+    EGGAcos: 0x8049AC10
+    EGGAtan2: 0x8049AC40
