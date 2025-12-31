@@ -1083,9 +1083,11 @@ pub fn update_tricks() {
                     }
                 },
                 G2State::BetweenPhases => {
-                    if !is_boss_dead() {
-                        // Health is nonzero, second phase has begun
-                        tricks_menu.active_trick = ActiveTrick::Ghirahim2(G2State::Phase2);
+                    if let Some(health) = get_boss_health() {
+                        if health == 600 {
+                            // second phase has begun
+                            tricks_menu.active_trick = ActiveTrick::Ghirahim2(G2State::Phase2);
+                        }
                     }
                 },
                 G2State::Phase2 => {
