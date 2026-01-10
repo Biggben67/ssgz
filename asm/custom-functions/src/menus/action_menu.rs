@@ -4,6 +4,11 @@ use crate::system::math::Vec3s;
 use crate::utils::menu::SimpleMenu;
 use crate::menus::Menu;
 
+extern "C" {
+    static mut USE_RNG: bool;
+    static mut HARDCODED_RNG_FLOAT: f32;
+}
+
 use super::main_menu;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -12,6 +17,7 @@ enum ActionMenuState {
     Main,
     Item,
     SceneFlag,
+    RNG,
 }
 
 const BYTESTRS: [&str; 16usize] = [
@@ -191,11 +197,13 @@ impl super::Menu for ActionMenu {
         const KILL_LINK: u32 = 4;
         const SCENE_FLAG: u32 = 5;
         const ENTER_BIT: u32 = 6;
+        // #[cfg(feature = "debug_dyn")]
+        const FIX_RNG: u32 = 7;
+        #[cfg(feature = "debug_dyn")]
+        const GIVE_ITEM: u32 = 8;
+        #[cfg(feature = "debug_dyn")]
+        const DEBUG_SAVE: u32 = 9;
 
-        #[cfg(feature = "debug_dyn")]
-        const GIVE_ITEM: u32 = 7;
-        #[cfg(feature = "debug_dyn")]
-        const DEBUG_SAVE: u32 = 8;
 
         let b_pressed = is_pressed(B);
         let a_pressed = is_pressed(A);
@@ -243,6 +251,11 @@ impl super::Menu for ActionMenu {
                             file_manager::trigger_save();
                             action_menu.state = ActionMenuState::Off;
                             main_menu::MainMenu::disable();
+                        },
+                        // #[cfg(feature = "debug_dyn")]
+                        FIX_RNG => {
+                            action_menu.state = ActionMenuState::RNG;
+                            // main_menu::MainMenu::disable();
                         }
                         _ => {},
                     }
@@ -318,6 +331,25 @@ impl super::Menu for ActionMenu {
                     }
                 }
             },
+            ActionMenuState::RNG => {
+                let using_game_rng = unsafe { &mut USE_RNG };
+                let rng_float = unsafe { &mut HARDCODED_RNG_FLOAT };
+                if b_pressed {
+                    action_menu.state = ActionMenuState::Main;
+                } else if a_pressed {
+                    *using_game_rng ^= true;
+                } else if right_pressed {
+                    *rng_float += 0.01f32;
+                    if *rng_float > 1f32 {
+                        *rng_float -= 1f32;
+                    }
+                } else if left_pressed {
+                    *rng_float -= 0.01f32;
+                    if *rng_float < 0f32 {
+                        *rng_float += 1f32;
+                    }
+                }
+            },
         }
     }
     fn display() {
@@ -343,6 +375,8 @@ impl super::Menu for ActionMenu {
                 menu.add_entry("RBM Scene Flag", "RBMs and commits a chosen scene flag in this area.");
                 menu.add_entry("Enter BiT", "Enter into Back in Time on Skyloft.");
 
+                // #[cfg(feature = "debug_dyn")]
+                menu.add_entry("Control RNG", "Fix the floating point RNG to a specific value.");
                 #[cfg(feature = "debug_dyn")]
                 menu.add_entry("Debug: Give Item", "Trigger an item get for an item id (risky, may cause crashes).");
                 #[cfg(feature = "debug_dyn")]
@@ -369,6 +403,15 @@ impl super::Menu for ActionMenu {
                 menu.set_cursor(flag_cursor.menu_cursor);
                 menu.draw();
                 flag_cursor.menu_cursor = menu.move_cursor();
+            },
+            ActionMenuState::RNG => {
+                let using_game_rng = unsafe { USE_RNG };
+                let rng_float = unsafe { HARDCODED_RNG_FLOAT };
+                let menu = crate::reset_menu();
+                let heading = if using_game_rng { "Using Vanilla Float RNG" } else { "Using Fixed Float RNG" };
+                menu.set_heading(heading);
+                menu.add_entry_fmt(format_args!("Value: {:.2}", rng_float), "Choose a value to lock float rng to.");
+                menu.draw();
             },
         }
     }
