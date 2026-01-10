@@ -27,6 +27,7 @@ main.dol:
     isPlayingHarp: 0x80381120
     # ActorLink, Vec3f* pos, Vec3s* rot, zero1, one, zero2
     ActorLink__setPosRot: 0x802416d0
+    ActorLink__getTargetedActor: 0x80246560
     LINK_PTR: 0x8057578C
     EQUIPPED_SWORD: 0x80571C74
     isInEvent: 0x8005B750
@@ -88,6 +89,11 @@ main.dol:
     ENEMY_LIST: 0x80575098
     SCGetAspectRatio: 0x803D64E0
     TITLE_LOADER: 0x80575780
+    BGS_INSTANCE: 0x80575CF0
+    Acch__GroundCheck: 0x8033f750
+    BgS__GroundCross: 0x8033a4b0
+    Acch__CrrPos: 0x80340490
+    Acch__ChkGndHit: 0x80340DB0
     # --------------- FLAG MANAGERS ---------------------------
     SceneflagManager__checkFlag: 0x800bdeb0
     SceneflagManager__checkFlagGlobal: 0x800bdf20

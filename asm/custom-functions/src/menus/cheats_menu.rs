@@ -155,7 +155,7 @@ pub fn update_cheats() {
         }
         if CHEATS[6].active && ButtonBuffer::check_combo_down_up(DPAD_RIGHT, C) {
             if let Some(player) = player::as_mut() {
-                player.velocity.y = 56f32; // Minimum amount for consistent liftoff on the ground
+                player.obj_base.velocity.y = 56f32; // Minimum amount for consistent liftoff on the ground
             }
         }
         set_instant_text(CHEATS[7].active);

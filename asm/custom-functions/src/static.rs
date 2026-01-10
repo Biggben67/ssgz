@@ -1,6 +1,6 @@
 mod system;
 use crate::system::heap::{Heap, get_dylink_heap};
-use core::{ffi::c_char, option::Option};
+use core::{ffi::{c_char, c_void}, option::Option};
 use alloc::boxed::Box;
 
 #[no_mangle]

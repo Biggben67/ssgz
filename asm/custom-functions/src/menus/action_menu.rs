@@ -82,8 +82,8 @@ fn save_file() {
     let current_file = file_manager::get_file_A();
 
     if let Some(link) = player::as_mut() {
-        current_file.pos_t1 = link.pos;
-        current_file.angle_t1 = link.angle.y;
+        current_file.pos_t1 = *link.position();
+        current_file.angle_t1 = link.rotation().y;
     }
 
     file_manager::save_A_to_selected();
@@ -124,7 +124,7 @@ fn load_file(direct: bool) {
 fn load_position() {
     if let Some(link) = player::as_mut() {
         let current_file = file_manager::get_file_A();
-        let mut angle = link.angle;
+        let mut angle = *link.rotation();
         angle.y = current_file.angle_t1;
         player::force_set_link_pos_rot(&current_file.pos_t1, &angle);
     }

@@ -114,6 +114,12 @@ impl Vec3f {
         }
     }
 
+    pub fn add(&mut self, other: &Self) {
+        self.x += other.x;
+        self.y += other.y;
+        self.z += other.z;
+    }
+
     pub fn sub(&mut self, other: &Self) {
         self.x -= other.x;
         self.y -= other.y;

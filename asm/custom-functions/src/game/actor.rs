@@ -1,9 +1,84 @@
-use core::ffi::c_void;
+use core::ffi::{c_char, c_void};
+
+use crate::{game::collision::CcD_Stts, system::math::{Matrix34f, Matrix44f, Vec3f, Vec3s}};
+
+#[repr(C)]
+pub struct Base {
+    pub unk0:         [u8; 0x8],
+    pub profile_name: ActorID,
+    pub unk1:         [u8; 0x56], // 0x60 - 0xA
+}
+
+#[repr(C)]
+pub struct AcBase {
+    pub base:              Base,
+    pub unk1:              [u8; 0x8],
+    pub allocator:         [u8; 0x1C], // 0x84 - 0x68
+    pub actor_info:        *const c_void,
+    pub sound_list:        [u8; 0xC],
+    pub sound_source:      u32, // RAII ptr
+    pub position_ptr:      *mut Vec3f,
+    pub position_copy:     Vec3f,
+    pub params2:           u32,
+    pub rotation_copy:     Vec3s,
+    pub obj_id:            u16,
+    pub room_id_copy:      i8,
+    pub view_clip_idx:     i8,
+    pub subtype:           u8,
+    pub rotation:          Vec3s,
+    pub position:          Vec3f,
+    pub scale:             Vec3f,
+    pub actor_properties:  u32,
+    pub actor_node:        [u8; 0xC], // dAcRef_c<dAcBase_c>
+    pub tg_snd_area_flags: u32,
+    pub room_id:           i8,
+    pub actor_subtype:     u8,
+    pub poly_attr0:        u8,
+    pub poly_attr1:        u8,
+    pub j_studio_actor:    u32,
+    pub some_str:          [c_char; 4],
+    pub field_0xf8:        [c_char; 4],
+}
+
+#[repr(C)]
+// #[derive(Clone)]
+pub struct AcObjBase {
+    pub ac_base:           AcBase,
+    pub y_offset:          f32,
+    pub field_0x100:       f32,
+    pub unkfloat:          f32,
+    pub field_0x108:       [c_char; 0xC],
+    pub target_fi_text_id: u16,
+    pub target_fi_related: u8,
+    pub old_position:      Vec3f,
+    pub position_copy2:    Vec3f,
+    pub position_copy3:    Vec3f,
+    pub angle:             Vec3s,
+    pub speed:             f32,
+    pub acceleration:      f32,
+    pub max_speed:         f32,
+    pub velocity:          Vec3f,
+    pub world_mtx:         Matrix34f,
+    pub pad0:              [u8; 0x24],  // 0x1B0 - 0x18C
+    pub field_0x1b0:       f32,         // might be related to EB?
+    pub field_0x1b4: Vec3f,
+    pub stts: CcD_Stts,
+    pub starting_pos: Vec3f,
+    pub starting_rot: Vec3s,
+    pub other_stuff:       [u8; 0x120], // 0x330 - 0x210
+}
+
+impl AcObjBase {
+    pub unsafe fn shallow_copy(&self) -> Self {
+        unsafe { core::ptr::read(self) }
+    }
+}
 
 // This is also known as Profile name for decomp purposes
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
-#[repr(C)]
+#[repr(u16)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ActorID {
     TITLE,                         // 000 (0x000)
     E3_TITLE,                      // 001 (0x001)
@@ -712,26 +787,8 @@ pub enum ActorID {
     INVALID,
 }
 
-// probably wrong
-#[repr(C)]
-struct EnemyLinkedList {
-    prev: *mut c_void,
-    next: *mut c_void,
-}
-
 extern "C" {
     fn findActorByActorType(actor_type: i32, start_actor: *const c_void) -> *mut c_void;
-    static ENEMY_LIST: EnemyLinkedList;
-}
-
-pub fn get_first_enemy() -> Option<*mut c_void> {
-    unsafe {
-        if ENEMY_LIST.prev.is_null() {
-            return None;
-        }
-
-        Some(ENEMY_LIST.prev)
-    }
 }
 
 pub fn find_actor_by_type(actor_type: i32, start_actor: *const c_void) -> *mut c_void {

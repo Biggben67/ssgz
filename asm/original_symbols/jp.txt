@@ -22,6 +22,7 @@ main.dol:
     isPlayingHarp: 0x80381650
     # ActorLink, Vec3f* pos, Vec3s* rot, zero1, one, zero2
     ActorLink__setPosRot: 0x80241c00
+    ActorLink__getTargetedActor: 0x80246a90
     LINK_PTR: 0x805789ec
     EQUIPPED_SWORD: 0x80574ed4
     # --------------- MISC   STUFF ----------------------------
@@ -63,6 +64,9 @@ main.dol:
     ENEMY_LIST: 0x805782f8
     SCGetAspectRatio: 0x803D6E30
     TITLE_LOADER: 0x805789e0
+    BGS_INSTANCE: 0x80578f50
+    Acch__CrrPos: 0x80340890
+    Acch__ChkGndHit: 0x803411b0
     # --------------- FLAG MANAGERS ---------------------------
     SceneflagManager__checkFlag: 0x800be400
     SceneflagManager__checkFlagGlobal: 0x800be470

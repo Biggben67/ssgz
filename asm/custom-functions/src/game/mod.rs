@@ -12,3 +12,5 @@ pub mod player;
 pub mod reloader;
 pub mod save_file;
 pub mod stage_info;
+pub mod collision;
+pub mod enemy;
