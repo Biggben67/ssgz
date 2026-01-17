@@ -1,6 +1,6 @@
 use core::ffi::c_void;
 
-use crate::{game::{actor::AcObjBase, collision::Acch}, system::math::Vec3f};
+use crate::{game::{actor::AcObjBase, collision::Acch, player}, system::math::Vec3f};
 
 #[repr(C)]
 pub struct AcEnBase {
@@ -31,6 +31,7 @@ struct EnemyLinkedList {
 
 extern "C" {
     static ENEMY_LIST: EnemyLinkedList;
+    fn ActorLink__doFinalBlow(link: *mut player::ActorLink, enemy: *mut AcEnBase);
 }
 
 pub fn get_first_enemy() -> Option<*mut c_void> {
@@ -40,5 +41,24 @@ pub fn get_first_enemy() -> Option<*mut c_void> {
         }
 
         Some(ENEMY_LIST.prev)
+    }
+}
+
+pub fn simulate_eb(force_to_origin: bool) {
+    if let Some(link) = player::as_mut() {
+        if let Some(enemy) = link.get_targeted_actor() {
+            if force_to_origin {
+                let fb_coords = enemy.fatal_blow_position;
+                enemy.fatal_blow_position = Vec3f::zero();
+                unsafe {
+                    ActorLink__doFinalBlow(player::as_mut().unwrap(), enemy);
+                }
+                enemy.fatal_blow_position = fb_coords;
+            } else {
+                unsafe {
+                    ActorLink__doFinalBlow(player::as_mut().unwrap(), enemy);
+                }
+            }
+        }
     }
 }

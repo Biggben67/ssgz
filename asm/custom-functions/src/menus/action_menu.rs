@@ -1,4 +1,4 @@
-use crate::game::{file_manager, flag_managers, item, player, reloader};
+use crate::game::{enemy, file_manager, flag_managers, item, player, reloader};
 use crate::system::button::*;
 use crate::system::math::Vec3s;
 use crate::utils::menu::SimpleMenu;
@@ -199,10 +199,11 @@ impl super::Menu for ActionMenu {
         const ENTER_BIT: u32 = 6;
         // #[cfg(feature = "debug_dyn")]
         const FIX_RNG: u32 = 7;
+        const SIMULATE_EB: u32 = 8;
         #[cfg(feature = "debug_dyn")]
-        const GIVE_ITEM: u32 = 8;
+        const GIVE_ITEM: u32 = 9;
         #[cfg(feature = "debug_dyn")]
-        const DEBUG_SAVE: u32 = 9;
+        const DEBUG_SAVE: u32 = 10;
 
 
         let b_pressed = is_pressed(B);
@@ -256,6 +257,11 @@ impl super::Menu for ActionMenu {
                         FIX_RNG => {
                             action_menu.state = ActionMenuState::RNG;
                             // main_menu::MainMenu::disable();
+                        },
+                        SIMULATE_EB => {
+                            enemy::simulate_eb(false);
+                            action_menu.state = ActionMenuState::Off;
+                            main_menu::MainMenu::disable();
                         }
                         _ => {},
                     }
@@ -377,6 +383,7 @@ impl super::Menu for ActionMenu {
 
                 // #[cfg(feature = "debug_dyn")]
                 menu.add_entry("Control RNG", "Fix the floating point RNG to a specific value.");
+                menu.add_entry("Simulate EB", "If you're targetting an enemy, perform an EB.");
                 #[cfg(feature = "debug_dyn")]
                 menu.add_entry("Debug: Give Item", "Trigger an item get for an item id (risky, may cause crashes).");
                 #[cfg(feature = "debug_dyn")]

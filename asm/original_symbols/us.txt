@@ -31,6 +31,7 @@ main.dol:
     LINK_PTR: 0x8057578C
     EQUIPPED_SWORD: 0x80571C74
     isInEvent: 0x8005B750
+    ActorLink__doFinalBlow: 0x801CB060
     # --------------- MISC   STUFF ----------------------------
     FontMgr__GetFont: 0x80053f30
     allocOnCurrentHeap: 0x80054ec0

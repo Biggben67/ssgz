@@ -79,6 +79,10 @@ pub fn rad_to_deg(ang: f32) -> f32 {
 }
 
 impl Vec3f {
+    pub const fn zero() -> Self {
+        Vec3f { x: 0.0, y: 0.0, z: 0.0 }
+    }
+    
     pub fn normalize(&mut self) {
         let len = self.len();
         if len >= 0.00001f32 {

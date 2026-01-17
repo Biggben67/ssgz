@@ -25,6 +25,7 @@ main.dol:
     ActorLink__getTargetedActor: 0x80246a90
     LINK_PTR: 0x805789ec
     EQUIPPED_SWORD: 0x80574ed4
+    ActorLink__doFinalBlow: 0x801cb590
     # --------------- MISC   STUFF ----------------------------
     FontMgr__GetFont: 0x80054040
     allocOnCurrentHeap: 0x80054fd0
