@@ -98,6 +98,7 @@ main.dol:
     BgS__GroundCross: 0x8033a4b0
     Acch__CrrPos: 0x80340490
     Acch__ChkGndHit: 0x80340DB0
+    dLytMeterMain__draw: 0x800d7b50
     # --------------- FLAG MANAGERS ---------------------------
     SceneflagManager__checkFlag: 0x800bdeb0
     SceneflagManager__checkFlagGlobal: 0x800bdf20

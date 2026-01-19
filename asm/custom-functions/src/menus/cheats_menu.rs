@@ -11,11 +11,12 @@ pub struct Cheat {
 
 extern "C" {
     fn set_instant_text(active: bool);
+    fn set_ui_hidden(hidden: bool);
 }
 
 #[no_mangle]
 #[link_section = "data"]
-pub static mut CHEATS: [Cheat; 8] = [
+pub static mut CHEATS: [Cheat; 9] = [
     Cheat {
         name:   "Infinite Health",
         description: "Constantly refills health to 20 hearts (unless you're already dead).",
@@ -58,6 +59,11 @@ pub static mut CHEATS: [Cheat; 8] = [
     Cheat {
         name:   "Instant Text",
         description: "Instantly fills in all text in text boxes.",
+        active: false,
+    },
+    Cheat {
+        name:   "Hide UI",
+        description: "Hides most of the in-game UI.",
         active: false,
     },
 ];
@@ -159,5 +165,6 @@ pub fn update_cheats() {
             }
         }
         set_instant_text(CHEATS[7].active);
+        set_ui_hidden(CHEATS[8].active);
     }
 }

@@ -6,6 +6,8 @@
 .global finish_instant_text
 .global hijack_rng
 .global use_game_rng
+.global handle_hide_ui
+.global finish_ui
 
 handle_instant_text:
 lis r9, INSTANT_TEXT_ACTIVE@ha
@@ -29,6 +31,18 @@ blr
 
 use_game_rng:
 b RELOCATE_RAND
+
+handle_hide_ui:
+lis r9, UI_HIDDEN@ha
+li r4, 0
+lbz r9, UI_HIDDEN@l(r9)
+cmpwi r9, 0
+beq finish_ui
+li r3, 1
+blr
+finish_ui:
+stwu r1, -0x10(r1)
+b dLytMeterMain__draw + 0x4
 
 ; 0x80062f40 in JP 1.0
 ; 0x80062e60 in US 1.0
@@ -56,5 +70,8 @@ b hijack_rng
 .org 0x802e0d18
 subi r3, r13, 0x38A0
 b REST_OF_RNG_FUNC
+
+.org 0x800d7b50 ; dLytMeterMain__draw
+b handle_hide_ui
 
 .close

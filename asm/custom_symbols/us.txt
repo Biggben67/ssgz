@@ -3,13 +3,17 @@ main.dol:
   finish_instant_text: 0x806782DC
   hijack_rng: 0x806782E0
   use_game_rng: 0x806782FC
-  custom_main_additions: 0x80678300
-  set_hook: 0x8067833C
-  clear_hook: 0x80678348
-  set_instant_text: 0x80678358
-  load_custom_rel: 0x80678368
-  load_rel: 0x80678390
-  UPDATE_HOOK: 0x80678460
-  INSTANT_TEXT_ACTIVE: 0x80678464
-  USE_RNG: 0x80678465
-  HARDCODED_RNG_FLOAT: 0x80678468
+  handle_hide_ui: 0x80678300
+  finish_ui: 0x8067831C
+  custom_main_additions: 0x80678324
+  set_hook: 0x80678360
+  clear_hook: 0x8067836C
+  set_instant_text: 0x8067837C
+  set_ui_hidden: 0x8067838C
+  load_custom_rel: 0x8067839C
+  load_rel: 0x806783C4
+  UPDATE_HOOK: 0x80678494
+  INSTANT_TEXT_ACTIVE: 0x80678498
+  UI_HIDDEN: 0x80678499
+  USE_RNG: 0x8067849A
+  HARDCODED_RNG_FLOAT: 0x8067849C

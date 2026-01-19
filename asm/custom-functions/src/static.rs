@@ -13,6 +13,10 @@ pub static mut INSTANT_TEXT_ACTIVE: bool = false;
 
 #[no_mangle]
 #[link_section = "data"]
+pub static mut UI_HIDDEN: bool = false;
+
+#[no_mangle]
+#[link_section = "data"]
 pub static mut USE_RNG: bool = true;
 
 #[no_mangle]
@@ -51,6 +55,11 @@ pub fn clear_hook() {
 #[no_mangle]
 pub fn set_instant_text(active: bool) {
     unsafe { INSTANT_TEXT_ACTIVE = active; }
+}
+
+#[no_mangle]
+pub fn set_ui_hidden(hidden: bool) {
+    unsafe { UI_HIDDEN = hidden; }
 }
 
 #[repr(C)]

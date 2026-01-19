@@ -71,6 +71,7 @@ main.dol:
     BGS_INSTANCE: 0x80578f50
     Acch__CrrPos: 0x80340890
     Acch__ChkGndHit: 0x803411b0
+    dLytMeterMain__draw: 0x800d80a0
     # --------------- FLAG MANAGERS ---------------------------
     SceneflagManager__checkFlag: 0x800be400
     SceneflagManager__checkFlagGlobal: 0x800be470
