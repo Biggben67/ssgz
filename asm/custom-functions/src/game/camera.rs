@@ -12,7 +12,6 @@ extern "C" {
     static mut SCN_ROOT_PTR: *mut u8;
     fn dScGame_c__getCamera(idx: i32) -> *mut DCamera;
 }
-
 const SCNROOT_CURRENT_CAMERA_ID_OFFSET: usize = 0xF4;
 const SCNROOT_CAMERA_ARRAY_OFFSET: usize = 0xF8;
 const CAMERA_DATA_SIZE: usize = 0x218;
@@ -311,7 +310,7 @@ pub fn update(free_cam_active: bool, freeze_camera_active: bool) {
             view.pos.y += speed * dy;
             view.pos.z += speed * dz;
 
-            // DPad-left: zoom out (higher FOV), DPad-right: zoom in (lower FOV).
+            // FOV manipulation with DPad
             let fov_step = if is_down(Z) {
                 FREE_CAM_FOV_STEP * FREE_CAM_FOV_FAST_MULT
             } else {
