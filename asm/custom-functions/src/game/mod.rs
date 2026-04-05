@@ -14,3 +14,4 @@ pub mod save_file;
 pub mod stage_info;
 pub mod collision;
 pub mod enemy;
+pub mod camera;
