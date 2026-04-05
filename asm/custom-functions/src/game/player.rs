@@ -35,6 +35,10 @@ impl ActorLink {
 
         None
     }
+
+    pub fn get_riding_actor(&self) -> Option<&mut AcObjBase> {
+        unsafe { ActorLink__getRidingActor(self).as_mut() }
+    }
 }
 
 #[repr(C)]
@@ -58,7 +62,8 @@ extern "C" {
     static LINK_PTR: *mut ActorLink;
     fn checkXZDistanceFromLink(actor: *const c_void, distance: f32) -> bool;
     fn ActorLink__setPosRot(player: *mut ActorLink, pos: *const Vec3f, angle: *const Vec3s, force: bool, unk1: u32, unk2: u32);
-    fn ActorLink__getTargetedActor(player: *const ActorLink) -> *mut AcEnBase; 
+    fn ActorLink__getTargetedActor(player: *const ActorLink) -> *mut AcEnBase;
+    fn ActorLink__getRidingActor(player: *const ActorLink) -> *mut AcObjBase;
 }
 
 pub fn as_mut() -> Option<&'static mut ActorLink> {
