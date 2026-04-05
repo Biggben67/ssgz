@@ -80,6 +80,10 @@ impl super::Menu for MainMenu {
             return;
         };
 
+        if super::cheats_menu::is_move_link_runtime_active() {
+            return;
+        }
+
         if is_down(Buttons::Z | Buttons::C) {
             unsafe { MAIN_MENU.state = MenuState::MenuSelect };
         }
