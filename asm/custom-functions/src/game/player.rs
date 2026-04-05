@@ -2,6 +2,11 @@ use core::ffi::c_void;
 
 use crate::{game::{actor::{AcObjBase, ActorID, Base}, collision::Acch, enemy::{AcEBc, AcEnBase}},  system::math::{Vec3f, Vec3s}};
 
+fn is_valid_game_ptr<T>(ptr: *mut T) -> bool {
+    let addr = ptr as usize;
+    (0x8000_0000..0x8180_0000).contains(&addr) || (0x9000_0000..0x9400_0000).contains(&addr)
+}
+
 #[repr(C)]
 pub struct ActorLink {
     pub obj_base: AcObjBase,
@@ -22,7 +27,11 @@ impl ActorLink {
     }
 
     pub fn get_targeted_actor(&self) -> Option<&mut AcEnBase> {
-        unsafe { ActorLink__getTargetedActor(self).as_mut() }
+        let ptr = unsafe { ActorLink__getTargetedActor(self) };
+        if !is_valid_game_ptr(ptr) {
+            return None;
+        }
+        unsafe { ptr.as_mut() }
     }
     
     pub fn get_targeted_bokoblin(&self) -> Option<&mut AcEBc> {
@@ -37,7 +46,11 @@ impl ActorLink {
     }
 
     pub fn get_riding_actor(&self) -> Option<&mut AcObjBase> {
-        unsafe { ActorLink__getRidingActor(self).as_mut() }
+        let ptr = unsafe { ActorLink__getRidingActor(self) };
+        if !is_valid_game_ptr(ptr) {
+            return None;
+        }
+        unsafe { ptr.as_mut() }
     }
 }
 
@@ -67,7 +80,12 @@ extern "C" {
 }
 
 pub fn as_mut() -> Option<&'static mut ActorLink> {
-    unsafe { LINK_PTR.as_mut() }
+    unsafe {
+        if !is_valid_game_ptr(LINK_PTR) {
+            return None;
+        }
+        LINK_PTR.as_mut()
+    }
 }
 
 pub fn force_set_link_pos_rot(pos: &Vec3f, angle: &Vec3s) {
