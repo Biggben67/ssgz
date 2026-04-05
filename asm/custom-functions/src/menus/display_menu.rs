@@ -1,3 +1,4 @@
+use crate::game::camera;
 use crate::live_info;
 use crate::system::button::*;
 use crate::utils::menu::SimpleMenu;
@@ -19,6 +20,20 @@ pub static mut DISPLAY_MENU: DisplayMenu = DisplayMenu {
     state:  DisplayMenuState::Off,
     cursor: 0,
 };
+
+#[link_section = "data"]
+#[no_mangle]
+pub static mut FREE_CAM_ENABLED: bool = false;
+
+#[link_section = "data"]
+#[no_mangle]
+pub static mut FREEZE_CAMERA_ENABLED: bool = false;
+
+pub fn update_display_features() {
+    unsafe {
+        camera::update(FREE_CAM_ENABLED, FREEZE_CAMERA_ENABLED);
+    }
+}
 
 impl super::Menu for DisplayMenu {
     fn enable() {
@@ -52,6 +67,12 @@ impl super::Menu for DisplayMenu {
                             },
                             3 => {
                                 live_info::FRAME_VIEWER ^= true;
+                            },
+                            4 => {
+                                FREE_CAM_ENABLED ^= true;
+                            },
+                            5 => {
+                                FREEZE_CAMERA_ENABLED ^= true;
                             },
                             _ => {},
                         }
@@ -116,6 +137,20 @@ impl super::Menu for DisplayMenu {
             } else {
                 "The game's frame count is currently hidden."
             }
+        );
+        menu.add_entry_fmt(
+            format_args!(
+                "FreeCam [{}]",
+                if unsafe { FREE_CAM_ENABLED } { "x" } else { " " }
+            ),
+            "Move with Stick, Hold C to rotate, Z for 5x speed, DPad-L/R adjusts FOV.",
+        );
+        menu.add_entry_fmt(
+            format_args!(
+                "Freeze Camera [{}]",
+                if unsafe { FREEZE_CAMERA_ENABLED } { "x" } else { " " }
+            ),
+            "Freeze the camera at its current position.",
         );
         menu.set_cursor(disp_menu.cursor);
         menu.draw();
