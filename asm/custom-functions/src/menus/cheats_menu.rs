@@ -142,7 +142,39 @@ static mut MOVE_LINK_POS: Vec3f = Vec3f::zero();
 
 #[link_section = "data"]
 #[no_mangle]
+static mut MOVE_LINK_EVENT_STATE_OWNED: bool = false;
+
+#[link_section = "data"]
+#[no_mangle]
+static mut MOVE_LINK_EVENT_STATE_ORIGINAL: i32 = 0;
+
+#[link_section = "data"]
+#[no_mangle]
 static mut MOVE_LINK_RUNTIME_ACTIVE: bool = false;
+
+#[repr(C)]
+struct EventManager {
+    _pad0: [u8; 0x184],
+    state: i32,
+}
+
+extern "C" {
+    static mut EVENT_MANAGER_INSTANCE: *mut EventManager;
+}
+
+fn is_valid_game_ptr<T>(ptr: *mut T) -> bool {
+    let addr = ptr as usize;
+    (0x8000_0000..0x8180_0000).contains(&addr) || (0x9000_0000..0x9400_0000).contains(&addr)
+}
+
+fn get_event_manager_mut() -> Option<&'static mut EventManager> {
+    unsafe {
+        if !is_valid_game_ptr(EVENT_MANAGER_INSTANCE) {
+            return None;
+        }
+        EVENT_MANAGER_INSTANCE.as_mut()
+    }
+}
 
 pub fn is_move_link_runtime_active() -> bool {
     unsafe { MOVE_LINK_RUNTIME_ACTIVE }
@@ -212,6 +244,12 @@ fn update_move_link(active: bool) {
                 MOVE_LINK_PLAYER_PTR = 0;
                 MOVE_LINK_INITIALIZED = false;
             }
+            if MOVE_LINK_EVENT_STATE_OWNED {
+                if let Some(event_manager) = get_event_manager_mut() {
+                    event_manager.state = MOVE_LINK_EVENT_STATE_ORIGINAL;
+                }
+                MOVE_LINK_EVENT_STATE_OWNED = false;
+            }
             camera::clear_external_override();
             return;
         }
@@ -235,6 +273,29 @@ fn update_move_link(active: bool) {
                 (*riding_actor_ptr).ac_base.position
             };
             MOVE_LINK_INITIALIZED = true;
+        }
+
+        // Freezing event state while riding can cause crashes if used improperly
+        let should_freeze_actors = riding_actor_ptr.is_null();
+        if should_freeze_actors {
+            if !MOVE_LINK_EVENT_STATE_OWNED {
+                if let Some(event_manager) = get_event_manager_mut() {
+                    MOVE_LINK_EVENT_STATE_ORIGINAL = event_manager.state;
+                    if MOVE_LINK_EVENT_STATE_ORIGINAL == 0 {
+                        event_manager.state = 1;
+                        MOVE_LINK_EVENT_STATE_OWNED = true;
+                    }
+                }
+            } else if let Some(event_manager) = get_event_manager_mut() {
+                event_manager.state = 1;
+            } else {
+                MOVE_LINK_EVENT_STATE_OWNED = false;
+            }
+        } else if MOVE_LINK_EVENT_STATE_OWNED {
+            if let Some(event_manager) = get_event_manager_mut() {
+                event_manager.state = MOVE_LINK_EVENT_STATE_ORIGINAL;
+            }
+            MOVE_LINK_EVENT_STATE_OWNED = false;
         }
 
         let stick = get_stick_pos();
