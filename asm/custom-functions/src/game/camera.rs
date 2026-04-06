@@ -11,7 +11,9 @@ use core::f32::consts::PI;
 extern "C" {
     static mut SCN_ROOT_PTR: *mut u8;
     fn dScGame_c__getCamera(idx: i32) -> *mut DCamera;
+    static mut EVENT_MANAGER_INSTANCE: *mut EventManager;
 }
+
 const SCNROOT_CURRENT_CAMERA_ID_OFFSET: usize = 0xF4;
 const SCNROOT_CAMERA_ARRAY_OFFSET: usize = 0xF8;
 const CAMERA_DATA_SIZE: usize = 0x218;
@@ -57,6 +59,12 @@ struct CameraData {
     target:      Vec3f,
 }
 
+#[repr(C)]
+struct EventManager {
+    _pad0: [u8; 0x184],
+    state: i32,
+}
+
 #[link_section = "data"]
 #[no_mangle]
 static mut FREE_CAM_INITIALIZED: bool = false;
@@ -84,6 +92,14 @@ static mut FREE_CAM_LINK_POS: Vec3f = Vec3f::zero();
 #[link_section = "data"]
 #[no_mangle]
 static mut FREE_CAM_LINK_ROT: Vec3s = Vec3s { x: 0, y: 0, z: 0 };
+
+#[link_section = "data"]
+#[no_mangle]
+static mut FREE_CAM_EVENT_STATE_OWNED: bool = false;
+
+#[link_section = "data"]
+#[no_mangle]
+static mut FREE_CAM_EVENT_STATE_ORIGINAL: i32 = 0;
 
 #[link_section = "data"]
 #[no_mangle]
@@ -120,6 +136,20 @@ static mut PREV_FREE_CAM_ACTIVE: bool = false;
 #[link_section = "data"]
 #[no_mangle]
 static mut LAST_FREE_CAM_FOV: f32 = 50.0;
+
+fn is_valid_game_ptr<T>(ptr: *mut T) -> bool {
+    let addr = ptr as usize;
+    (0x8000_0000..0x8180_0000).contains(&addr) || (0x9000_0000..0x9400_0000).contains(&addr)
+}
+
+fn get_event_manager_mut() -> Option<&'static mut EventManager> {
+    unsafe {
+        if !is_valid_game_ptr(EVENT_MANAGER_INSTANCE) {
+            return None;
+        }
+        EVENT_MANAGER_INSTANCE.as_mut()
+    }
+}
 
 pub fn set_external_override(pos: Vec3f, target: Vec3f) {
     unsafe {
@@ -239,7 +269,28 @@ fn lock_link_for_free_cam() {
 }
 
 fn set_free_cam_actor_freeze(active: bool) {
-    let _ = active;
+    unsafe {
+        if active {
+            if !FREE_CAM_EVENT_STATE_OWNED {
+                if let Some(event_manager) = get_event_manager_mut() {
+                    FREE_CAM_EVENT_STATE_ORIGINAL = event_manager.state;
+                    if FREE_CAM_EVENT_STATE_ORIGINAL == 0 {
+                        FREE_CAM_EVENT_STATE_OWNED = true;
+                        event_manager.state = 1;
+                    }
+                }
+            } else if let Some(event_manager) = get_event_manager_mut() {
+                event_manager.state = 1;
+            } else {
+                FREE_CAM_EVENT_STATE_OWNED = false;
+            }
+        } else if FREE_CAM_EVENT_STATE_OWNED {
+            if let Some(event_manager) = get_event_manager_mut() {
+                event_manager.state = FREE_CAM_EVENT_STATE_ORIGINAL;
+            }
+            FREE_CAM_EVENT_STATE_OWNED = false;
+        }
+    }
 }
 
 fn current_view() -> Option<CamView> {
@@ -262,6 +313,12 @@ pub fn update(free_cam_active: bool, freeze_camera_active: bool) {
             FREE_CAM_INITIALIZED = false;
             FREEZE_CAMERA_INITIALIZED = false;
             PREV_FREE_CAM_ACTIVE = false;
+            if FREE_CAM_EVENT_STATE_OWNED {
+                if let Some(event_manager) = get_event_manager_mut() {
+                    event_manager.state = FREE_CAM_EVENT_STATE_ORIGINAL;
+                }
+                FREE_CAM_EVENT_STATE_OWNED = false;
+            }
         }
         return;
     };
@@ -310,7 +367,7 @@ pub fn update(free_cam_active: bool, freeze_camera_active: bool) {
             view.pos.y += speed * dy;
             view.pos.z += speed * dz;
 
-            // FOV manipulation with DPad
+            // DPad-left: zoom out (higher FOV), DPad-right: zoom in (lower FOV).
             let fov_step = if is_down(Z) {
                 FREE_CAM_FOV_STEP * FREE_CAM_FOV_FAST_MULT
             } else {
