@@ -1,9 +1,8 @@
 use crate::{
-    game::{camera, file_manager, flag_managers::ItemflagManager, player},
+    game::{camera, file_manager, flag_managers::ItemflagManager, is_valid_game_ptr, player},
     system::{button::*, math::{self, Vec3f, Vec3s}},
     utils::menu::SimpleMenu,
 };
-use core::f32::consts::TAU;
 
 pub struct Cheat {
     name:   &'static str,
@@ -55,8 +54,8 @@ pub static mut CHEATS: [Cheat; 10] = [
         active: false,
     },
     Cheat {
-        name:   "Enable Move Link (Z + A + B)",
-        description: "C+left/right rotate, C+up/down vertical, Z fast, Z+Minus very fast.",
+        name:   "Move Link",
+        description: "(Z + A + B) C+left/right rotate, C+up/down vertical, Z fast, Z+Minus very fast.",
         active: false,
     },
     //Cheat {
@@ -150,21 +149,26 @@ static mut MOVE_LINK_EVENT_STATE_ORIGINAL: i32 = 0;
 
 #[link_section = "data"]
 #[no_mangle]
+static mut MOVE_LINK_CAMERA_PLAY_OWNED: bool = false;
+
+#[link_section = "data"]
+#[no_mangle]
+static mut MOVE_LINK_CAMERA_PLAY_ORIGINAL: i32 = 0;
+
+#[link_section = "data"]
+#[no_mangle]
 static mut MOVE_LINK_RUNTIME_ACTIVE: bool = false;
 
 #[repr(C)]
 struct EventManager {
     _pad0: [u8; 0x184],
     state: i32,
+    _pad1: [u8; 4],
+    camera_play: i32,
 }
 
 extern "C" {
     static mut EVENT_MANAGER_INSTANCE: *mut EventManager;
-}
-
-fn is_valid_game_ptr<T>(ptr: *mut T) -> bool {
-    let addr = ptr as usize;
-    (0x8000_0000..0x8180_0000).contains(&addr) || (0x9000_0000..0x9400_0000).contains(&addr)
 }
 
 fn get_event_manager_mut() -> Option<&'static mut EventManager> {
@@ -178,6 +182,15 @@ fn get_event_manager_mut() -> Option<&'static mut EventManager> {
 
 pub fn is_move_link_runtime_active() -> bool {
     unsafe { MOVE_LINK_RUNTIME_ACTIVE }
+}
+
+pub fn force_disable_move_link() {
+    unsafe {
+        MOVE_LINK_RUNTIME_ACTIVE = false;
+    }
+    update_move_link(false);
+    camera::clear_external_override();
+    set_move_link_camera_play(false);
 }
 
 #[derive(PartialEq, Eq)]
@@ -198,22 +211,6 @@ static mut CHEAT_MENU: CheatsMenu = CheatsMenu {
     cursor: 0,
 };
 
-fn normalize_angle(mut angle: f32) -> f32 {
-    while angle >= TAU {
-        angle -= TAU;
-    }
-    while angle < 0.0 {
-        angle += TAU;
-    }
-    angle
-}
-
-fn rad_to_short(angle: f32) -> i16 {
-    let wrapped = normalize_angle(angle);
-    let turns = wrapped / TAU;
-    ((turns * 65536.0) as u16) as i16
-}
-
 fn consume_move_link_input() {
     set_stick_pos([0.0, 0.0]);
     let mut down = buttons_down();
@@ -231,6 +228,53 @@ fn apply_transform_to_actor(actor: &mut crate::game::actor::AcObjBase, pos: Vec3
     actor.ac_base.rotation_copy = rot;
 }
 
+fn get_move_link_camera_view(pos: Vec3f, yaw: f32) -> (Vec3f, Vec3f) {
+    let camera_target = Vec3f {
+        x: pos.x,
+        y: pos.y + MOVE_LINK_CAMERA_HEIGHT,
+        z: pos.z,
+    };
+    let camera_pos = Vec3f {
+        x: pos.x - MOVE_LINK_CAMERA_DIST * math::sin(yaw),
+        y: pos.y + MOVE_LINK_CAMERA_HEIGHT,
+        z: pos.z - MOVE_LINK_CAMERA_DIST * math::cos(yaw),
+    };
+    (camera_pos, camera_target)
+}
+
+fn set_move_link_camera_override(pos: Vec3f, yaw: f32) {
+    let (camera_pos, camera_target) = get_move_link_camera_view(pos, yaw);
+    camera::set_external_override(camera_pos, camera_target);
+}
+
+fn snap_move_link_camera(pos: Vec3f, yaw: f32) {
+    let (camera_pos, camera_target) = get_move_link_camera_view(pos, yaw);
+    camera::snap_external_camera_to_game(camera_pos, camera_target);
+}
+
+fn set_move_link_camera_play(active: bool) {
+    unsafe {
+        if active {
+            if !MOVE_LINK_CAMERA_PLAY_OWNED {
+                if let Some(event_manager) = get_event_manager_mut() {
+                    MOVE_LINK_CAMERA_PLAY_ORIGINAL = event_manager.camera_play;
+                    MOVE_LINK_CAMERA_PLAY_OWNED = true;
+                }
+            }
+            if let Some(event_manager) = get_event_manager_mut() {
+                event_manager.camera_play = 1;
+            } else {
+                MOVE_LINK_CAMERA_PLAY_OWNED = false;
+            }
+        } else if MOVE_LINK_CAMERA_PLAY_OWNED {
+            if let Some(event_manager) = get_event_manager_mut() {
+                event_manager.camera_play = MOVE_LINK_CAMERA_PLAY_ORIGINAL;
+            }
+            MOVE_LINK_CAMERA_PLAY_OWNED = false;
+        }
+    }
+}
+
 fn update_move_link(active: bool) {
     unsafe {
         if !active {
@@ -243,14 +287,15 @@ fn update_move_link(active: bool) {
                 }
                 MOVE_LINK_PLAYER_PTR = 0;
                 MOVE_LINK_INITIALIZED = false;
+                snap_move_link_camera(MOVE_LINK_POS, MOVE_LINK_YAW);
             }
+            set_move_link_camera_play(false);
             if MOVE_LINK_EVENT_STATE_OWNED {
                 if let Some(event_manager) = get_event_manager_mut() {
                     event_manager.state = MOVE_LINK_EVENT_STATE_ORIGINAL;
                 }
                 MOVE_LINK_EVENT_STATE_OWNED = false;
             }
-            camera::clear_external_override();
             return;
         }
 
@@ -275,8 +320,9 @@ fn update_move_link(active: bool) {
             MOVE_LINK_INITIALIZED = true;
         }
 
-        // Freezing event state while riding can cause crashes if used improperly
+        // Freezing event state while riding can destabilize rider/mount ownership.
         let should_freeze_actors = riding_actor_ptr.is_null();
+        set_move_link_camera_play(true);
         if should_freeze_actors {
             if !MOVE_LINK_EVENT_STATE_OWNED {
                 if let Some(event_manager) = get_event_manager_mut() {
@@ -306,7 +352,7 @@ fn update_move_link(active: bool) {
         let move_x = if c_down { 0.0 } else { -stick[0] * STICK_MOVE_SCALE };
         let yaw_delta = if c_down { -stick[0] * STICK_ROT_SCALE } else { 0.0 };
 
-        MOVE_LINK_YAW = normalize_angle(MOVE_LINK_YAW + yaw_delta * MOVE_LINK_ROTATION_SPEED);
+        MOVE_LINK_YAW = math::normalize_angle(MOVE_LINK_YAW + yaw_delta * MOVE_LINK_ROTATION_SPEED);
         let sin_yaw = math::sin(MOVE_LINK_YAW);
         let cos_yaw = math::cos(MOVE_LINK_YAW);
 
@@ -330,7 +376,7 @@ fn update_move_link(active: bool) {
         MOVE_LINK_POS = pos;
 
         let mut rot = *link.rotation();
-        rot.y = rad_to_short(MOVE_LINK_YAW);
+        rot.y = math::rad_to_short(MOVE_LINK_YAW);
 
         player::force_set_link_pos_rot(&pos, &rot);
         *link.position() = pos;
@@ -345,17 +391,7 @@ fn update_move_link(active: bool) {
             apply_transform_to_actor(&mut *riding_actor_ptr, pos, rot);
         }
 
-        let camera_target = Vec3f {
-            x: pos.x,
-            y: pos.y + MOVE_LINK_CAMERA_HEIGHT,
-            z: pos.z,
-        };
-        let camera_pos = Vec3f {
-            x: pos.x - MOVE_LINK_CAMERA_DIST * math::sin(MOVE_LINK_YAW),
-            y: pos.y + MOVE_LINK_CAMERA_HEIGHT,
-            z: pos.z - MOVE_LINK_CAMERA_DIST * math::cos(MOVE_LINK_YAW),
-        };
-        camera::set_external_override(camera_pos, camera_target);
+        set_move_link_camera_override(pos, MOVE_LINK_YAW);
 
         consume_move_link_input();
     }
@@ -412,7 +448,11 @@ impl super::Menu for CheatsMenu {
 pub fn update_cheats() {
     unsafe {
         if CHEATS[CHEAT_MOVE_LINK].active && ButtonBuffer::check_combo_pressed(Z | A | B) {
-            MOVE_LINK_RUNTIME_ACTIVE ^= true;
+            if MOVE_LINK_RUNTIME_ACTIVE {
+                MOVE_LINK_RUNTIME_ACTIVE = false;
+            } else if !super::display_menu::is_free_cam_runtime_active() {
+                MOVE_LINK_RUNTIME_ACTIVE = true;
+            }
         }
         if !CHEATS[CHEAT_MOVE_LINK].active {
             MOVE_LINK_RUNTIME_ACTIVE = false;
