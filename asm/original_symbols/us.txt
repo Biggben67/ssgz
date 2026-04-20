@@ -182,6 +182,7 @@ main.dol:
     returnForInstantText: 0x80115A08
     # ----------------- GX Stuffs -----------------------------
     PSMTXIdentity: 0x803b7f40
+    C_MTXPerspective: 0x803b8630
     C_MTXOrtho: 0x803b9070
     GXSetProjection: 0x803c2250
     GXLoadPosMtxImm: 0x803c2350
@@ -210,6 +211,8 @@ main.dol:
     GXSetChanCtrl: 0x803bea00
     __GXSetIndirectMask: 0x803c0340
     GXSetChanMatColor: 0x803be8f0
+    GXSetLineWidth: 0x803bd6d0
+    DRAW_GX_CAMERA_MTX: 0x80674df8
     EGG_DrawGX__BeginDrawLine: 0x8049F140
     EGG_DrawGX__DrawLine: 0x8049F400
     # ----------------- REL Stuffs ------------------------------
