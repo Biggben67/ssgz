@@ -80,7 +80,9 @@ impl super::Menu for MainMenu {
             return;
         };
 
-        if super::cheats_menu::is_move_link_runtime_active() {
+        if super::cheats_menu::is_move_link_runtime_active()
+            || super::display_menu::is_free_cam_runtime_active()
+        {
             return;
         }
 
