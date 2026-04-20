@@ -1,11 +1,6 @@
 use core::ffi::c_void;
 
-use crate::{game::{actor::{AcObjBase, ActorID, Base}, collision::Acch, enemy::{AcEBc, AcEnBase}},  system::math::{Vec3f, Vec3s}};
-
-fn is_valid_game_ptr<T>(ptr: *mut T) -> bool {
-    let addr = ptr as usize;
-    (0x8000_0000..0x8180_0000).contains(&addr) || (0x9000_0000..0x9400_0000).contains(&addr)
-}
+use crate::{game::{actor::{AcObjBase, ActorID, Base}, collision::Acch, enemy::{AcEBc, AcEnBase}, is_valid_game_ptr},  system::math::{Vec3f, Vec3s}};
 
 #[repr(C)]
 pub struct ActorLink {
