@@ -52,6 +52,11 @@ pub fn do_global_updates() {
     }
 }
 
+pub fn force_disable_runtime_tools() {
+    cheats_menu::force_disable_move_link();
+    display_menu::force_disable_free_cam();
+}
+
 pub fn initialize() {
     practice_saves_menu::initialize_practice_saves();
     inventory_menu::initialize_item_list();
